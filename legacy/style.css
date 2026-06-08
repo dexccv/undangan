@@ -1291,7 +1291,7 @@ section {
   /* overflow: hidden; */ /* Removing overflow hidden to avoid clipping shadows */
 }
 
-section::before, section::after, #cover::before, #cover::after {
+section::before, #cover::before {
   border-radius: 0; right: auto; left: 0;
   content: '';
   position: absolute;
@@ -1314,11 +1314,6 @@ section::before, #cover::before {
   top: 0;
 }
 
-section::after, #cover::after {
-  bottom: 0;
-  transform: rotate(180deg);
-}
-
 /* Pastikan semua elemen di dalam section berada di atas frame */
 section > * {
   position: relative;
@@ -1331,7 +1326,7 @@ section > * {
 }
 
 @media (max-width: 600px) {
-  section::before, section::after, #cover::before, #cover::after {
+  section::before, #cover::before {
   border-radius: 0; right: auto; left: 0;
     height: 200px;
     background-size: cover;
@@ -1343,7 +1338,7 @@ section > * {
 
 
 
-#cover::before, #cover::after {
+#cover::before {
   content: '' !important;
   position: absolute !important;
   left: 0 !important;
@@ -1360,15 +1355,6 @@ section > * {
   opacity: 1 !important;
   border-radius: 0 !important;
   background-color: transparent !important;
-}
-
-#cover::before {
   top: 0 !important;
   bottom: auto !important;
-}
-
-#cover::after {
-  bottom: 0 !important;
-  top: auto !important;
-  transform: rotate(180deg) !important;
 }
