@@ -12,7 +12,8 @@ import {
   setDoc, 
   deleteDoc 
 } from 'firebase/firestore';
-import { Link, Eye, Edit2, Trash2, Copy, Send } from 'lucide-react';
+import { Link, Eye, Edit2, Trash2, Copy, Send, Download, Upload } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import './DevDashboard.css';
 
 export default function DevDashboard() {
@@ -33,7 +34,7 @@ export default function DevDashboard() {
   // Link Generator State
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
   const [selectedCoupleForLinks, setSelectedCoupleForLinks] = useState(null);
-  const [guestListText, setGuestListText] = useState('');
+  const [guestData, setGuestData] = useState([]); // Array of {name, phone}
   const [waTemplate, setWaTemplate] = useState('Kepada Yth. Bapak/Ibu/Saudara/i *{nama_tamu}*,\n\nTanpa mengurangi rasa hormat, perkenankan kami mengundang Bapak/Ibu/Saudara/i untuk hadir dan memberikan doa restu pada acara pernikahan kami.\n\nBerikut link undangan kami:\n{link}\n\nMerupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Saudara/i berkenan hadir di acara pernikahan kami.\n\nTerima kasih.');
   const [generatedLinks, setGeneratedLinks] = useState([]);
 
@@ -156,29 +157,71 @@ export default function DevDashboard() {
 
   const handleOpenLinkGenerator = (couple) => {
     setSelectedCoupleForLinks(couple);
-    setGuestListText('');
+    setGuestData([]);
     setGeneratedLinks([]);
     setIsLinkModalOpen(true);
   };
 
+  const downloadExcelTemplate = () => {
+    const ws = XLSX.utils.json_to_sheet([
+      { "Nama Tamu": "Bapak Budi", "No WhatsApp": "081234567890" },
+      { "Nama Tamu": "Andi & Keluarga", "No WhatsApp": "628987654321" }
+    ]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Template Tamu");
+    XLSX.writeFile(wb, "Template_Tamu_Undangan.xlsx");
+  };
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const bstr = evt.target.result;
+      const wb = XLSX.read(bstr, { type: 'binary' });
+      const wsname = wb.SheetNames[0];
+      const ws = wb.Sheets[wsname];
+      const data = XLSX.utils.sheet_to_json(ws);
+      
+      const parsedGuests = data.map(row => {
+        // Fallbacks for different column names
+        const name = row['Nama Tamu'] || row['Nama'] || row['Name'] || Object.values(row)[0] || '';
+        let phone = row['No WhatsApp'] || row['No WA'] || row['Phone'] || Object.values(row)[1] || '';
+        
+        // Clean phone number (remove spaces, -, +, leading 0 replaced with 62)
+        if (phone) {
+          phone = String(phone).replace(/\D/g, '');
+          if (phone.startsWith('0')) {
+            phone = '62' + phone.substring(1);
+          }
+        }
+        return { name: String(name).trim(), phone: phone };
+      }).filter(g => g.name);
+
+      setGuestData(parsedGuests);
+    };
+    reader.readAsBinaryString(file);
+  };
+
   const handleGenerateLinks = () => {
-    if (!guestListText.trim()) {
-      alert("Masukkan minimal 1 nama tamu!");
+    if (guestData.length === 0) {
+      alert("Belum ada data tamu! Silakan import dari Excel terlebih dahulu.");
       return;
     }
-    const names = guestListText.split('\n').map(n => n.trim()).filter(n => n);
+    
     const domain = window.location.origin;
     
-    const results = names.map(name => {
-      const urlSafeName = encodeURIComponent(name);
-      // Construct link, usually ?id=xxx&to=yyy or /xxx?to=yyy
+    const results = guestData.map(guest => {
+      const urlSafeName = encodeURIComponent(guest.name);
       const link = `${domain}/?id=${selectedCoupleForLinks.id}&to=${urlSafeName}`;
       
-      let msg = waTemplate.replace(/{nama_tamu}/g, name);
+      let msg = waTemplate.replace(/{nama_tamu}/g, guest.name);
       msg = msg.replace(/{link}/g, link);
       
       return {
-        name,
+        name: guest.name,
+        phone: guest.phone,
         link,
         message: msg
       };
@@ -444,14 +487,28 @@ export default function DevDashboard() {
               <div className="dev-modal-body">
                 <div className="dev-grid-2">
                   <div className="dev-input-group">
-                    <label>Daftar Nama Tamu (Pisahkan dengan Enter)</label>
-                    <textarea 
-                      rows="8" 
-                      value={guestListText} 
-                      onChange={e => setGuestListText(e.target.value)} 
-                      placeholder="Budi&#10;Andi & Keluarga&#10;Siti"
-                      style={{ padding: '0.75rem', border: '1px solid #cbd5e1', borderRadius: '8px', fontFamily: 'inherit', resize: 'vertical' }}
-                    ></textarea>
+                    <label>Import Data Tamu (Excel / CSV)</label>
+                    <div style={{ display: 'flex', gap: '1rem', flexDirection: 'column' }}>
+                      <button type="button" onClick={downloadExcelTemplate} className="dev-btn dev-btn-secondary" style={{ width: 'fit-content', gap: '0.5rem' }}>
+                        <Download size={16} /> Download Template Excel
+                      </button>
+                      
+                      <div style={{ position: 'relative' }}>
+                        <input 
+                          type="file" 
+                          accept=".xlsx, .xls, .csv" 
+                          onChange={handleFileUpload} 
+                          style={{
+                            padding: '0.75rem', border: '1px dashed #cbd5e1', borderRadius: '8px', width: '100%', cursor: 'pointer', background: '#f8fafc'
+                          }}
+                        />
+                      </div>
+                      {guestData.length > 0 && (
+                        <div style={{ background: '#e0f2fe', color: '#0369a1', padding: '0.75rem', borderRadius: '8px', fontSize: '0.9rem' }}>
+                          Berhasil memuat <strong>{guestData.length}</strong> kontak tamu.
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div className="dev-input-group">
                     <label>Template Pesan WhatsApp</label>
@@ -469,18 +526,20 @@ export default function DevDashboard() {
                   className="dev-btn dev-btn-primary dev-full-width" 
                   style={{ marginTop: '1rem', marginBottom: '2rem' }}
                   onClick={handleGenerateLinks}
+                  disabled={guestData.length === 0}
                 >
-                  Generate {guestListText.split('\n').filter(n => n.trim()).length} Link Tamu
+                  Generate {guestData.length} Link Tamu
                 </button>
 
                 {generatedLinks.length > 0 && (
                   <div className="dev-generated-results">
                     <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', color: '#0f172a' }}>Hasil Generate</h3>
-                    <div className="dev-table-container" style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                    <div className="dev-table-container" style={{ maxHeight: '400px', overflowY: 'auto' }}>
                       <table className="dev-table">
                         <thead>
                           <tr>
                             <th>Nama Tamu</th>
+                            <th>No WA</th>
                             <th>Aksi</th>
                           </tr>
                         </thead>
@@ -488,6 +547,7 @@ export default function DevDashboard() {
                           {generatedLinks.map((item, idx) => (
                             <tr key={idx}>
                               <td><strong>{item.name}</strong><br/><small style={{color: '#64748b'}}>{item.link}</small></td>
+                              <td>{item.phone || '-'}</td>
                               <td>
                                 <div style={{display: 'flex', gap: '0.5rem'}}>
                                   <button 
@@ -498,7 +558,7 @@ export default function DevDashboard() {
                                     <Copy size={14} /> Copy Pesan
                                   </button>
                                   <a 
-                                    href={`https://wa.me/?text=${encodeURIComponent(item.message)}`}
+                                    href={`https://wa.me/${item.phone || ''}?text=${encodeURIComponent(item.message)}`}
                                     target="_blank"
                                     rel="noreferrer"
                                     className="dev-btn dev-btn-sm dev-btn-primary"
