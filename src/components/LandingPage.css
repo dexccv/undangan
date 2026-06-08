@@ -516,13 +516,59 @@ a {
     display: none; /* simple mobile nav */
   }
   
+  .lp-hero {
+    padding: 100px 5% 50px;
+    flex-direction: column;
+    text-align: center;
+    gap: 2rem;
+    min-height: auto;
+  }
+
   .lp-title {
-    font-size: 2.5rem;
+    font-size: 2.2rem;
+    margin-bottom: 1rem;
   }
   
+  .lp-subtitle {
+    font-size: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
   .lp-phone-mockup {
-    width: 260px;
-    height: 520px;
+    width: 220px;
+    height: 440px;
+    border-radius: 30px;
+    padding: 8px;
+  }
+
+  .lp-phone-mockup::before {
+    width: 90px;
+    height: 20px;
+  }
+
+  .lp-section-title {
+    font-size: 1.8rem;
+    margin-bottom: 2rem;
+  }
+  
+  .lp-features, .lp-pricing {
+    padding: 60px 5%;
+  }
+  
+  .lp-price-card {
+    padding: 2rem 1.5rem;
+  }
+  
+  .lp-price {
+    font-size: 2rem;
+  }
+  
+  .lp-footer {
+    padding: 60px 5% 40px;
+  }
+  
+  .lp-footer h2 {
+    font-size: 2rem;
   }
 }
 
