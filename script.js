@@ -80,10 +80,13 @@ async function loadCMSData() {
             
             // Set dynamic border
             if (data.url_border) {
-                document.documentElement.style.setProperty('--dyn-border-url', url(' + data.url_border + '));
+                document.documentElement.style.setProperty('--dyn-border-url', "url('" + data.url_border + "')");
             }
             
-            document.title = The Wedding of  + data.wanita_panggilan +  &  + data.pria_panggilan;
+            document.title = "The Wedding of " + data.wanita_panggilan + " & " + data.pria_panggilan;
+            if (document.getElementById('page-title')) document.getElementById('page-title').innerText = document.title;
+            if (document.getElementById('meta-desc')) document.getElementById('meta-desc').content = "Undangan Pernikahan " + data.wanita_panggilan + " & " + data.pria_panggilan;
+            if (document.getElementById('meta-og-title')) document.getElementById('meta-og-title').content = document.title;
             
             // Re-init features that depend on data
             initCountdown(data.target_countdown);
@@ -289,13 +292,13 @@ function initForms() {
       btn.innerHTML = 'Mengirim...';
 
       try {
-        await addDoc(collection(db, invitations/ + coupleId + /rsvp), {
+        await addDoc(collection(db, "invitations/" + coupleId + "/rsvp"), {
           name: name,
           hadir: hadir,
           guest_count: hadir === 'hadir' ? parseInt(count) : 0,
           timestamp: serverTimestamp()
         });
-        showToast(Terima kasih,  + name + ! Konfirmasi kehadiran Anda telah tersimpan.);
+        showToast("Terima kasih, " + name + "! Konfirmasi kehadiran Anda telah tersimpan.");
         rsvpForm.reset();
         if(countGroup) countGroup.style.display = 'block';
       } catch (error) {
@@ -323,12 +326,12 @@ function initForms() {
       btn.innerHTML = 'Mengirim...';
 
       try {
-        await addDoc(collection(db, invitations/ + coupleId + /guestbook), {
+        await addDoc(collection(db, "invitations/" + coupleId + "/guestbook"), {
           name: name,
           message: message,
           timestamp: serverTimestamp()
         });
-        showToast(Terima kasih,  + name + ! Ucapan & doa Anda telah terkirim. ??);
+        showToast("Terima kasih, " + name + "! Ucapan & doa Anda telah terkirim. 💐");
         guestbookForm.reset();
       } catch (error) {
         console.error("Error adding wish: ", error);
@@ -342,7 +345,7 @@ function initForms() {
 
   // Real-time Guestbook Listener
   if (wishesList) {
-    const q = query(collection(db, invitations/ + coupleId + /guestbook), orderBy("timestamp", "desc"));
+    const q = query(collection(db, "invitations/" + coupleId + "/guestbook"), orderBy("timestamp", "desc"));
     onSnapshot(q, (snapshot) => {
       wishesList.innerHTML = '';
       snapshot.forEach((doc) => {
