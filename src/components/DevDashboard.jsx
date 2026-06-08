@@ -1,0 +1,524 @@
+import React, { useState, useEffect } from 'react';
+import { auth, db } from '../firebase';
+import { 
+  signInWithEmailAndPassword, 
+  onAuthStateChanged, 
+  signOut 
+} from 'firebase/auth';
+import { 
+  collection, 
+  getDocs, 
+  doc, 
+  setDoc, 
+  deleteDoc 
+} from 'firebase/firestore';
+import './DevDashboard.css';
+
+export default function DevDashboard() {
+  const [user, setUser] = useState(null);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+
+  const [couples, setCouples] = useState([]);
+  const [loadingData, setLoadingData] = useState(true);
+
+  // Form State
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [formData, setFormData] = useState(getInitialFormData());
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Link Generator State
+  const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
+  const [selectedCoupleForLinks, setSelectedCoupleForLinks] = useState(null);
+  const [guestListText, setGuestListText] = useState('');
+  const [waTemplate, setWaTemplate] = useState('Kepada Yth. Bapak/Ibu/Saudara/i *{nama_tamu}*,\n\nTanpa mengurangi rasa hormat, perkenankan kami mengundang Bapak/Ibu/Saudara/i untuk hadir dan memberikan doa restu pada acara pernikahan kami.\n\nBerikut link undangan kami:\n{link}\n\nMerupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Saudara/i berkenan hadir di acara pernikahan kami.\n\nTerima kasih.');
+  const [generatedLinks, setGeneratedLinks] = useState([]);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      if (currentUser) {
+        fetchCouples();
+      } else {
+        setLoadingData(false);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  function getInitialFormData() {
+    return {
+      id: '',
+      wanita_panggilan: '',
+      wanita_lengkap: '',
+      wanita_ortu: '',
+      rekening_wanita: '',
+      pria_panggilan: '',
+      pria_lengkap: '',
+      pria_ortu: '',
+      rekening_pria: '',
+      tanggal_cover: '',
+      tanggal_lengkap: '',
+      target_countdown: '',
+      waktu_akad: '',
+      waktu_resepsi: '',
+      lokasi_akad: '',
+      lokasi_resepsi: '',
+      alamat_baris1: '',
+      alamat_baris2: '',
+      link_maps: '',
+      url_border: 'assets/floral_border.png'
+    };
+  }
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoginError('');
+    setIsLoggingIn(true);
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (err) {
+      setLoginError(err.message);
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    await signOut(auth);
+  };
+
+  const fetchCouples = async () => {
+    setLoadingData(true);
+    try {
+      const querySnapshot = await getDocs(collection(db, 'couples'));
+      const data = [];
+      querySnapshot.forEach((doc) => {
+        data.push({ id: doc.id, ...doc.data() });
+      });
+      setCouples(data);
+    } catch (error) {
+      console.error("Error fetching couples:", error);
+    } finally {
+      setLoadingData(false);
+    }
+  };
+
+  const handleFormChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleEdit = (couple) => {
+    setFormData(couple);
+    setIsFormOpen(true);
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm(`Apakah Anda yakin ingin menghapus undangan dengan ID: ${id}?`)) {
+      try {
+        await deleteDoc(doc(db, 'couples', id));
+        fetchCouples();
+      } catch (error) {
+        alert("Gagal menghapus: " + error.message);
+      }
+    }
+  };
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setIsSaving(true);
+    const docId = formData.id.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
+    
+    if (!docId) {
+      alert("ID Pasangan tidak boleh kosong!");
+      setIsSaving(false);
+      return;
+    }
+
+    const dataToSave = { ...formData };
+    delete dataToSave.id; // remove id from fields to save
+
+    try {
+      await setDoc(doc(db, "couples", docId), dataToSave);
+      alert("Data berhasil disimpan!");
+      setIsFormOpen(false);
+      fetchCouples();
+    } catch (err) {
+      alert("Error: " + err.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleOpenLinkGenerator = (couple) => {
+    setSelectedCoupleForLinks(couple);
+    setGuestListText('');
+    setGeneratedLinks([]);
+    setIsLinkModalOpen(true);
+  };
+
+  const handleGenerateLinks = () => {
+    if (!guestListText.trim()) {
+      alert("Masukkan minimal 1 nama tamu!");
+      return;
+    }
+    const names = guestListText.split('\n').map(n => n.trim()).filter(n => n);
+    const domain = window.location.origin;
+    
+    const results = names.map(name => {
+      const urlSafeName = encodeURIComponent(name);
+      // Construct link, usually ?id=xxx&to=yyy or /xxx?to=yyy
+      const link = `${domain}/?id=${selectedCoupleForLinks.id}&to=${urlSafeName}`;
+      
+      let msg = waTemplate.replace(/{nama_tamu}/g, name);
+      msg = msg.replace(/{link}/g, link);
+      
+      return {
+        name,
+        link,
+        message: msg
+      };
+    });
+    setGeneratedLinks(results);
+  };
+
+  const handleCopyMessage = (msg) => {
+    navigator.clipboard.writeText(msg).then(() => {
+      alert('Pesan disalin ke clipboard!');
+    });
+  };
+
+  if (!user) {
+    return (
+      <div className="dev-login-container">
+        <div className="dev-login-card">
+          <div className="dev-login-header">
+            <h2>Digitalisasi.id</h2>
+            <p>Admin Dashboard Login</p>
+          </div>
+          <form onSubmit={handleLogin} className="dev-login-form">
+            <div className="dev-input-group">
+              <label>Email Address</label>
+              <input 
+                type="email" 
+                value={email} 
+                onChange={e => setEmail(e.target.value)} 
+                required 
+                placeholder="admin@digitalisasi.id"
+              />
+            </div>
+            <div className="dev-input-group">
+              <label>Password</label>
+              <input 
+                type="password" 
+                value={password} 
+                onChange={e => setPassword(e.target.value)} 
+                required 
+                placeholder="••••••••"
+              />
+            </div>
+            {loginError && <div className="dev-error-message">{loginError}</div>}
+            <button type="submit" className="dev-btn dev-btn-primary" disabled={isLoggingIn}>
+              {isLoggingIn ? 'Authenticating...' : 'Sign In'}
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="dev-dashboard">
+      <nav className="dev-sidebar">
+        <div className="dev-brand">
+          <h2>Digitalisasi.id</h2>
+          <span className="dev-badge">Admin</span>
+        </div>
+        <div className="dev-nav-items">
+          <button className="dev-nav-item active">Manajemen Undangan</button>
+          {/* Add more nav items here if needed */}
+        </div>
+        <div className="dev-user-info">
+          <p className="dev-user-email">{user.email}</p>
+          <button onClick={handleLogout} className="dev-btn dev-btn-danger dev-btn-sm">Logout</button>
+        </div>
+      </nav>
+
+      <main className="dev-main-content">
+        <header className="dev-header">
+          <h1>Manajemen Undangan</h1>
+          <button 
+            className="dev-btn dev-btn-primary" 
+            onClick={() => {
+              setFormData(getInitialFormData());
+              setIsFormOpen(true);
+            }}
+          >
+            + Buat Undangan Baru
+          </button>
+        </header>
+
+        {loadingData ? (
+          <div className="dev-loading">Memuat data...</div>
+        ) : (
+          <div className="dev-table-container">
+            <table className="dev-table">
+              <thead>
+                <tr>
+                  <th>ID Undangan</th>
+                  <th>Mempelai Wanita</th>
+                  <th>Mempelai Pria</th>
+                  <th>Tanggal Acara</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                {couples.length === 0 ? (
+                  <tr>
+                    <td colSpan="5" style={{textAlign: 'center', padding: '2rem'}}>Belum ada data undangan.</td>
+                  </tr>
+                ) : (
+                  couples.map(couple => (
+                    <tr key={couple.id}>
+                      <td><span className="dev-code">{couple.id}</span></td>
+                      <td>{couple.wanita_panggilan}</td>
+                      <td>{couple.pria_panggilan}</td>
+                      <td>{couple.tanggal_lengkap}</td>
+                      <td>
+                        <div className="dev-action-btns">
+                          <button onClick={() => handleOpenLinkGenerator(couple)} className="dev-btn-icon" title="Generate Link Tamu">🔗</button>
+                          <a href={`/?id=${couple.id}`} target="_blank" rel="noreferrer" className="dev-btn-icon" title="Lihat Undangan">👁️</a>
+                          <button onClick={() => handleEdit(couple)} className="dev-btn-icon" title="Edit">✏️</button>
+                          <button onClick={() => handleDelete(couple.id)} className="dev-btn-icon dev-text-danger" title="Hapus">🗑️</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Modal Form */}
+        {isFormOpen && (
+          <div className="dev-modal-overlay">
+            <div className="dev-modal">
+              <div className="dev-modal-header">
+                <h2>{formData.id ? 'Edit Undangan' : 'Buat Undangan Baru'}</h2>
+                <button className="dev-btn-close" onClick={() => setIsFormOpen(false)}>✕</button>
+              </div>
+              
+              <form onSubmit={handleSave} className="dev-modal-body">
+                <section className="dev-form-section">
+                  <h3>Pengaturan Umum</h3>
+                  <div className="dev-grid-2">
+                    <div className="dev-input-group">
+                      <label>ID Undangan (URL Slug) *</label>
+                      <input type="text" name="id" value={formData.id} onChange={handleFormChange} required placeholder="contoh: andi-siti" disabled={!!couples.find(c => c.id === formData.id)} />
+                      <small>Hanya huruf kecil, angka, dan strip (-).</small>
+                    </div>
+                    <div className="dev-input-group">
+                      <label>URL Gambar Border</label>
+                      <input type="text" name="url_border" value={formData.url_border} onChange={handleFormChange} />
+                    </div>
+                  </div>
+                </section>
+
+                <div className="dev-grid-2">
+                  <section className="dev-form-section dev-card-female">
+                    <h3>Data Mempelai Wanita</h3>
+                    <div className="dev-input-group">
+                      <label>Nama Panggilan</label>
+                      <input type="text" name="wanita_panggilan" value={formData.wanita_panggilan} onChange={handleFormChange} required />
+                    </div>
+                    <div className="dev-input-group">
+                      <label>Nama Lengkap</label>
+                      <input type="text" name="wanita_lengkap" value={formData.wanita_lengkap} onChange={handleFormChange} required />
+                    </div>
+                    <div className="dev-input-group">
+                      <label>Nama Orang Tua</label>
+                      <input type="text" name="wanita_ortu" value={formData.wanita_ortu} onChange={handleFormChange} required />
+                    </div>
+                    <div className="dev-input-group">
+                      <label>Nomor Rekening</label>
+                      <input type="text" name="rekening_wanita" value={formData.rekening_wanita} onChange={handleFormChange} />
+                    </div>
+                  </section>
+
+                  <section className="dev-form-section dev-card-male">
+                    <h3>Data Mempelai Pria</h3>
+                    <div className="dev-input-group">
+                      <label>Nama Panggilan</label>
+                      <input type="text" name="pria_panggilan" value={formData.pria_panggilan} onChange={handleFormChange} required />
+                    </div>
+                    <div className="dev-input-group">
+                      <label>Nama Lengkap</label>
+                      <input type="text" name="pria_lengkap" value={formData.pria_lengkap} onChange={handleFormChange} required />
+                    </div>
+                    <div className="dev-input-group">
+                      <label>Nama Orang Tua</label>
+                      <input type="text" name="pria_ortu" value={formData.pria_ortu} onChange={handleFormChange} required />
+                    </div>
+                    <div className="dev-input-group">
+                      <label>Nomor Rekening</label>
+                      <input type="text" name="rekening_pria" value={formData.rekening_pria} onChange={handleFormChange} />
+                    </div>
+                  </section>
+                </div>
+
+                <section className="dev-form-section">
+                  <h3>Waktu & Lokasi Acara</h3>
+                  <div className="dev-grid-3">
+                    <div className="dev-input-group">
+                      <label>Tanggal Cover (Mis: 12 . 12 . 2026)</label>
+                      <input type="text" name="tanggal_cover" value={formData.tanggal_cover} onChange={handleFormChange} required />
+                    </div>
+                    <div className="dev-input-group">
+                      <label>Tanggal Lengkap</label>
+                      <input type="text" name="tanggal_lengkap" value={formData.tanggal_lengkap} onChange={handleFormChange} required placeholder="Sabtu, 12 Desember 2026"/>
+                    </div>
+                    <div className="dev-input-group">
+                      <label>Target Countdown</label>
+                      <input type="datetime-local" name="target_countdown" value={formData.target_countdown ? formData.target_countdown.slice(0, 16) : ''} onChange={handleFormChange} />
+                    </div>
+                  </div>
+
+                  <div className="dev-grid-2">
+                    <div className="dev-input-group">
+                      <label>Jam Akad</label>
+                      <input type="text" name="waktu_akad" value={formData.waktu_akad} onChange={handleFormChange} placeholder="08:00 WIB" />
+                    </div>
+                    <div className="dev-input-group">
+                      <label>Jam Resepsi</label>
+                      <input type="text" name="waktu_resepsi" value={formData.waktu_resepsi} onChange={handleFormChange} placeholder="11:00 WIB - Selesai" />
+                    </div>
+                    <div className="dev-input-group">
+                      <label>Lokasi Akad</label>
+                      <input type="text" name="lokasi_akad" value={formData.lokasi_akad} onChange={handleFormChange} />
+                    </div>
+                    <div className="dev-input-group">
+                      <label>Lokasi Resepsi</label>
+                      <input type="text" name="lokasi_resepsi" value={formData.lokasi_resepsi} onChange={handleFormChange} />
+                    </div>
+                  </div>
+
+                  <div className="dev-input-group mt-3">
+                    <label>Alamat Baris 1 (Gedung/Jalan)</label>
+                    <input type="text" name="alamat_baris1" value={formData.alamat_baris1} onChange={handleFormChange} required />
+                  </div>
+                  <div className="dev-input-group">
+                    <label>Alamat Baris 2 (Kota/Kecamatan)</label>
+                    <input type="text" name="alamat_baris2" value={formData.alamat_baris2} onChange={handleFormChange} required />
+                  </div>
+                  <div className="dev-input-group">
+                    <label>Link Google Maps</label>
+                    <input type="url" name="link_maps" value={formData.link_maps} onChange={handleFormChange} required />
+                  </div>
+                </section>
+
+                <div className="dev-modal-footer">
+                  <button type="button" className="dev-btn dev-btn-secondary" onClick={() => setIsFormOpen(false)}>Batal</button>
+                  <button type="submit" className="dev-btn dev-btn-primary" disabled={isSaving}>
+                    {isSaving ? 'Menyimpan...' : 'Simpan Data'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Link Generator Modal */}
+        {isLinkModalOpen && selectedCoupleForLinks && (
+          <div className="dev-modal-overlay">
+            <div className="dev-modal" style={{ maxWidth: '800px' }}>
+              <div className="dev-modal-header">
+                <h2>Generate Link Tamu: {selectedCoupleForLinks.id}</h2>
+                <button className="dev-btn-close" onClick={() => setIsLinkModalOpen(false)}>✕</button>
+              </div>
+              
+              <div className="dev-modal-body">
+                <div className="dev-grid-2">
+                  <div className="dev-input-group">
+                    <label>Daftar Nama Tamu (Pisahkan dengan Enter)</label>
+                    <textarea 
+                      rows="8" 
+                      value={guestListText} 
+                      onChange={e => setGuestListText(e.target.value)} 
+                      placeholder="Budi&#10;Andi & Keluarga&#10;Siti"
+                      style={{ padding: '0.75rem', border: '1px solid #cbd5e1', borderRadius: '8px', fontFamily: 'inherit', resize: 'vertical' }}
+                    ></textarea>
+                  </div>
+                  <div className="dev-input-group">
+                    <label>Template Pesan WhatsApp</label>
+                    <textarea 
+                      rows="8" 
+                      value={waTemplate} 
+                      onChange={e => setWaTemplate(e.target.value)} 
+                      style={{ padding: '0.75rem', border: '1px solid #cbd5e1', borderRadius: '8px', fontFamily: 'inherit', resize: 'vertical' }}
+                    ></textarea>
+                    <small>Gunakan <code>{`{nama_tamu}`}</code> dan <code>{`{link}`}</code> sebagai variabel.</small>
+                  </div>
+                </div>
+
+                <button 
+                  className="dev-btn dev-btn-primary dev-full-width" 
+                  style={{ marginTop: '1rem', marginBottom: '2rem' }}
+                  onClick={handleGenerateLinks}
+                >
+                  Generate {guestListText.split('\n').filter(n => n.trim()).length} Link Tamu
+                </button>
+
+                {generatedLinks.length > 0 && (
+                  <div className="dev-generated-results">
+                    <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', color: '#0f172a' }}>Hasil Generate</h3>
+                    <div className="dev-table-container" style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                      <table className="dev-table">
+                        <thead>
+                          <tr>
+                            <th>Nama Tamu</th>
+                            <th>Aksi</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {generatedLinks.map((item, idx) => (
+                            <tr key={idx}>
+                              <td><strong>{item.name}</strong><br/><small style={{color: '#64748b'}}>{item.link}</small></td>
+                              <td>
+                                <div style={{display: 'flex', gap: '0.5rem'}}>
+                                  <button 
+                                    onClick={() => handleCopyMessage(item.message)} 
+                                    className="dev-btn dev-btn-sm dev-btn-outline"
+                                    style={{ border: '1px solid #3b82f6', color: '#3b82f6' }}
+                                  >
+                                    Copy Pesan
+                                  </button>
+                                  <a 
+                                    href={`https://wa.me/?text=${encodeURIComponent(item.message)}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="dev-btn dev-btn-sm dev-btn-primary"
+                                  >
+                                    Kirim WA
+                                  </a>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+      </main>
+    </div>
+  );
+}

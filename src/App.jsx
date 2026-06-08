@@ -14,12 +14,14 @@ import Gift from './components/Gift';
 import Closing from './components/Closing';
 import MusicPlayer from './components/MusicPlayer';
 import LandingPage from './components/LandingPage';
+import DevDashboard from './components/DevDashboard';
 
 export default function App() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [coupleId, setCoupleId] = useState(null);
   const [isLandingPage, setIsLandingPage] = useState(false);
+  const [isDevDashboard, setIsDevDashboard] = useState(false);
 
   useEffect(() => {
     // Scroll Reveal Logic
@@ -50,7 +52,8 @@ export default function App() {
     }
     
     if (id === 'dev') {
-      window.location.href = '/dev.html';
+      setIsDevDashboard(true);
+      setLoading(false);
       return;
     }
     
@@ -93,6 +96,7 @@ export default function App() {
   }, []);
 
   if (loading) return <div style={{textAlign: 'center', padding: '100px'}}>Loading...</div>;
+  if (isDevDashboard) return <DevDashboard />;
   if (isLandingPage) return <LandingPage />;
   if (!data) return <div style={{textAlign: 'center', padding: '100px'}}>Undangan Tidak Ditemukan</div>;
 
