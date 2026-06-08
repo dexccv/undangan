@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { Sparkles, Zap, Music, BookOpen, CheckCircle2, XCircle } from 'lucide-react';
 import './LandingPage.css';
 
 export default function LandingPage() {
@@ -61,22 +62,22 @@ export default function LandingPage() {
         <h2 className="lp-section-title lp-reveal">Mengapa Memilih Kami?</h2>
         <div className="lp-feature-grid">
           <div className="lp-feature-card lp-reveal" style={{ transitionDelay: '100ms' }}>
-            <div className="lp-feature-icon">✨</div>
+            <div className="lp-feature-icon"><Sparkles size={40} color="var(--lp-primary)" /></div>
             <h3>Desain Eksklusif</h3>
             <p>Pilihan tema premium dengan animasi halus (micro-animations) yang memukau tamu undangan Anda.</p>
           </div>
           <div className="lp-feature-icon-card lp-feature-card lp-reveal" style={{ transitionDelay: '200ms' }}>
-            <div className="lp-feature-icon">🚀</div>
+            <div className="lp-feature-icon"><Zap size={40} color="var(--lp-primary)" /></div>
             <h3>Cepat & Mudah</h3>
             <p>Undangan langsung jadi tanpa proses rumit. Anda bisa langsung membagikannya dalam hitungan menit.</p>
           </div>
           <div className="lp-feature-card lp-reveal" style={{ transitionDelay: '300ms' }}>
-            <div className="lp-feature-icon">🎵</div>
+            <div className="lp-feature-icon"><Music size={40} color="var(--lp-primary)" /></div>
             <h3>Musik & Galeri</h3>
             <p>Dilengkapi fitur musik latar belakang dan galeri foto romantis untuk membangun suasana.</p>
           </div>
           <div className="lp-feature-card lp-reveal" style={{ transitionDelay: '400ms' }}>
-            <div className="lp-feature-icon">📖</div>
+            <div className="lp-feature-icon"><BookOpen size={40} color="var(--lp-primary)" /></div>
             <h3>RSVP & Buku Tamu</h3>
             <p>Kelola konfirmasi kehadiran dan dapatkan ucapan hangat langsung di dalam satu platform.</p>
           </div>
@@ -93,12 +94,12 @@ export default function LandingPage() {
               <div className="lp-price">Rp 49.000</div>
             </div>
             <ul className="lp-price-features">
-              <li>✔️ Tema Standard</li>
-              <li>✔️ Informasi Acara</li>
-              <li>✔️ Navigasi Lokasi (Google Maps)</li>
-              <li>✔️ Galeri (Max 5 Foto)</li>
-              <li className="lp-disabled">❌ Musik Latar</li>
-              <li className="lp-disabled">❌ RSVP & Buku Tamu</li>
+              <li><CheckCircle2 size={18} color="#10b981" /> Tema Standard</li>
+              <li><CheckCircle2 size={18} color="#10b981" /> Informasi Acara</li>
+              <li><CheckCircle2 size={18} color="#10b981" /> Navigasi Lokasi (Google Maps)</li>
+              <li><CheckCircle2 size={18} color="#10b981" /> Galeri (Max 5 Foto)</li>
+              <li className="lp-disabled"><XCircle size={18} color="#94a3b8" /> Musik Latar</li>
+              <li className="lp-disabled"><XCircle size={18} color="#94a3b8" /> RSVP & Buku Tamu</li>
             </ul>
             <a href="https://wa.me/6281234567890?text=Halo%20saya%20tertarik%20dengan%20Paket%20Basic" className="lp-btn lp-btn-outline lp-full-width">Pilih Basic</a>
           </div>
@@ -110,13 +111,13 @@ export default function LandingPage() {
               <div className="lp-price">Rp 99.000</div>
             </div>
             <ul className="lp-price-features">
-              <li>✔️ Tema Premium (Animasi Eksklusif)</li>
-              <li>✔️ Informasi Acara & Hitung Mundur</li>
-              <li>✔️ Navigasi Lokasi (Google Maps)</li>
-              <li>✔️ Galeri (Max 15 Foto)</li>
-              <li>✔️ Musik Latar Pilihan</li>
-              <li>✔️ RSVP & Buku Tamu</li>
-              <li>✔️ Kisah Cinta (Love Story)</li>
+              <li><CheckCircle2 size={18} color="#10b981" /> Tema Premium (Animasi Eksklusif)</li>
+              <li><CheckCircle2 size={18} color="#10b981" /> Informasi Acara & Hitung Mundur</li>
+              <li><CheckCircle2 size={18} color="#10b981" /> Navigasi Lokasi (Google Maps)</li>
+              <li><CheckCircle2 size={18} color="#10b981" /> Galeri (Max 15 Foto)</li>
+              <li><CheckCircle2 size={18} color="#10b981" /> Musik Latar Pilihan</li>
+              <li><CheckCircle2 size={18} color="#10b981" /> RSVP & Buku Tamu</li>
+              <li><CheckCircle2 size={18} color="#10b981" /> Kisah Cinta (Love Story)</li>
             </ul>
             <a href="https://wa.me/6281234567890?text=Halo%20saya%20tertarik%20dengan%20Paket%20Premium" className="lp-btn lp-btn-primary lp-full-width">Pilih Premium</a>
           </div>
@@ -127,12 +128,12 @@ export default function LandingPage() {
               <div className="lp-price">Rp 249.000</div>
             </div>
             <ul className="lp-price-features">
-              <li>✔️ Semua Fitur Premium</li>
-              <li>✔️ Custom Desain Tema</li>
-              <li>✔️ Custom Domain (.com)</li>
-              <li>✔️ Galeri Tanpa Batas</li>
-              <li>✔️ Filter Instagram Khusus</li>
-              <li>✔️ Prioritas Support 24/7</li>
+              <li><CheckCircle2 size={18} color="#10b981" /> Semua Fitur Premium</li>
+              <li><CheckCircle2 size={18} color="#10b981" /> Custom Desain Tema</li>
+              <li><CheckCircle2 size={18} color="#10b981" /> Custom Domain (.com)</li>
+              <li><CheckCircle2 size={18} color="#10b981" /> Galeri Tanpa Batas</li>
+              <li><CheckCircle2 size={18} color="#10b981" /> Filter Instagram Khusus</li>
+              <li><CheckCircle2 size={18} color="#10b981" /> Prioritas Support 24/7</li>
             </ul>
             <a href="https://wa.me/6281234567890?text=Halo%20saya%20tertarik%20dengan%20Paket%20Custom" className="lp-btn lp-btn-outline lp-full-width">Hubungi Kami</a>
           </div>

@@ -12,6 +12,7 @@ import {
   setDoc, 
   deleteDoc 
 } from 'firebase/firestore';
+import { Link, Eye, Edit2, Trash2, Copy, Send } from 'lucide-react';
 import './DevDashboard.css';
 
 export default function DevDashboard() {
@@ -289,10 +290,10 @@ export default function DevDashboard() {
                       <td>{couple.tanggal_lengkap}</td>
                       <td>
                         <div className="dev-action-btns">
-                          <button onClick={() => handleOpenLinkGenerator(couple)} className="dev-btn-icon" title="Generate Link Tamu">🔗</button>
-                          <a href={`/?id=${couple.id}`} target="_blank" rel="noreferrer" className="dev-btn-icon" title="Lihat Undangan">👁️</a>
-                          <button onClick={() => handleEdit(couple)} className="dev-btn-icon" title="Edit">✏️</button>
-                          <button onClick={() => handleDelete(couple.id)} className="dev-btn-icon dev-text-danger" title="Hapus">🗑️</button>
+                          <button onClick={() => handleOpenLinkGenerator(couple)} className="dev-btn-icon" title="Generate Link Tamu"><Link size={18} /></button>
+                          <a href={`/?id=${couple.id}`} target="_blank" rel="noreferrer" className="dev-btn-icon" title="Lihat Undangan"><Eye size={18} /></a>
+                          <button onClick={() => handleEdit(couple)} className="dev-btn-icon" title="Edit"><Edit2 size={18} /></button>
+                          <button onClick={() => handleDelete(couple.id)} className="dev-btn-icon dev-text-danger" title="Hapus"><Trash2 size={18} /></button>
                         </div>
                       </td>
                     </tr>
@@ -492,17 +493,18 @@ export default function DevDashboard() {
                                   <button 
                                     onClick={() => handleCopyMessage(item.message)} 
                                     className="dev-btn dev-btn-sm dev-btn-outline"
-                                    style={{ border: '1px solid #3b82f6', color: '#3b82f6' }}
+                                    style={{ border: '1px solid #3b82f6', color: '#3b82f6', gap: '0.5rem' }}
                                   >
-                                    Copy Pesan
+                                    <Copy size={14} /> Copy Pesan
                                   </button>
                                   <a 
                                     href={`https://wa.me/?text=${encodeURIComponent(item.message)}`}
                                     target="_blank"
                                     rel="noreferrer"
                                     className="dev-btn dev-btn-sm dev-btn-primary"
+                                    style={{ gap: '0.5rem' }}
                                   >
-                                    Kirim WA
+                                    <Send size={14} /> Kirim WA
                                   </a>
                                 </div>
                               </td>
