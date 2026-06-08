@@ -1,0 +1,527 @@
+/* LandingPage.css */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --lp-bg: #fcfbfa;
+  --lp-text: #2c2c2c;
+  --lp-text-light: #666666;
+  --lp-primary: #c49a6c;
+  --lp-primary-hover: #b0875b;
+  --lp-secondary: #e8e0d5;
+  --lp-card-bg: rgba(255, 255, 255, 0.8);
+  --lp-border: rgba(196, 154, 108, 0.2);
+  --lp-radius: 24px;
+  --lp-transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  --lp-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+  --lp-shadow-hover: 0 20px 40px rgba(196, 154, 108, 0.15);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.lp-container {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background-color: var(--lp-bg);
+  color: var(--lp-text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Playfair Display', serif;
+  margin-top: 0;
+  color: var(--lp-text);
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* Buttons */
+.lp-btn {
+  display: inline-block;
+  padding: 12px 28px;
+  border-radius: 50px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: var(--lp-transition);
+  text-align: center;
+  border: 2px solid transparent;
+}
+
+.lp-btn-primary {
+  background: var(--lp-primary);
+  color: #fff;
+  box-shadow: 0 4px 15px rgba(196, 154, 108, 0.3);
+}
+
+.lp-btn-primary:hover {
+  background: var(--lp-primary-hover);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(196, 154, 108, 0.4);
+}
+
+.lp-btn-secondary {
+  background: var(--lp-secondary);
+  color: var(--lp-text);
+}
+
+.lp-btn-secondary:hover {
+  background: #dfd5c8;
+  transform: translateY(-3px);
+}
+
+.lp-btn-outline {
+  background: transparent;
+  border-color: var(--lp-primary);
+  color: var(--lp-primary);
+}
+
+.lp-btn-outline:hover {
+  background: var(--lp-primary);
+  color: #fff;
+}
+
+.lp-btn-large {
+  padding: 16px 40px;
+  font-size: 1.125rem;
+}
+
+.lp-full-width {
+  width: 100%;
+}
+
+/* Navigation */
+.lp-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 5%;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: rgba(252, 251, 250, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 1000;
+  border-bottom: 1px solid var(--lp-border);
+}
+
+.lp-logo {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--lp-primary);
+  letter-spacing: -0.5px;
+}
+
+.lp-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.lp-nav-links a:not(.lp-btn) {
+  font-weight: 500;
+  transition: color 0.3s;
+}
+
+.lp-nav-links a:not(.lp-btn):hover {
+  color: var(--lp-primary);
+}
+
+/* Hero Section */
+.lp-hero {
+  padding: 150px 5% 100px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  min-height: 100vh;
+}
+
+.lp-hero-content {
+  flex: 1;
+  max-width: 600px;
+}
+
+.lp-title {
+  font-size: 4rem;
+  line-height: 1.1;
+  margin-bottom: 1.5rem;
+  background: linear-gradient(135deg, #2c2c2c 0%, var(--lp-primary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.lp-subtitle {
+  font-size: 1.25rem;
+  color: var(--lp-text-light);
+  margin-bottom: 2.5rem;
+}
+
+.lp-hero-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.lp-hero-image-wrapper {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  position: relative;
+}
+
+/* Phone Mockup Styling */
+.lp-phone-mockup {
+  width: 300px;
+  height: 600px;
+  background: #fff;
+  border-radius: 40px;
+  padding: 12px;
+  box-shadow: 0 30px 60px rgba(0,0,0,0.1), 0 0 0 10px rgba(255,255,255,0.5);
+  position: relative;
+  border: 1px solid #eaeaea;
+  transform: rotate(5deg);
+  transition: var(--lp-transition);
+}
+
+.lp-phone-mockup:hover {
+  transform: rotate(0deg) translateY(-10px);
+  box-shadow: 0 40px 80px rgba(196, 154, 108, 0.2), 0 0 0 10px rgba(255,255,255,0.8);
+}
+
+.lp-phone-mockup::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120px;
+  height: 25px;
+  background: #fff;
+  border-bottom-left-radius: 20px;
+  border-bottom-right-radius: 20px;
+  z-index: 2;
+}
+
+.lp-phone-screen {
+  width: 100%;
+  height: 100%;
+  background: url('https://images.unsplash.com/photo-1519741497674-611481863552?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80') center/cover;
+  border-radius: 30px;
+  overflow: hidden;
+  position: relative;
+}
+
+.lp-mock-wedding-cover {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,0.7));
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 2rem;
+  color: #fff;
+  text-align: center;
+}
+
+.lp-mock-wedding-cover h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  color: #fff;
+}
+
+.lp-mock-wedding-cover p {
+  font-size: 0.9rem;
+  letter-spacing: 2px;
+  opacity: 0.8;
+}
+
+/* Background elements */
+.lp-hero::before {
+  content: '';
+  position: absolute;
+  top: -10%;
+  right: -5%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(196, 154, 108, 0.1) 0%, rgba(255,255,255,0) 70%);
+  border-radius: 50%;
+  z-index: -1;
+}
+
+/* Features Section */
+.lp-section-title {
+  text-align: center;
+  font-size: 2.5rem;
+  margin-bottom: 3rem;
+  position: relative;
+  display: inline-block;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.lp-section-title::after {
+  content: '';
+  position: absolute;
+  bottom: -15px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 3px;
+  background: var(--lp-primary);
+  border-radius: 3px;
+}
+
+.lp-features {
+  padding: 100px 5%;
+  background: #fff;
+}
+
+.lp-feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.lp-feature-card {
+  background: var(--lp-card-bg);
+  padding: 2.5rem 2rem;
+  border-radius: var(--lp-radius);
+  text-align: center;
+  border: 1px solid var(--lp-border);
+  box-shadow: var(--lp-shadow);
+  transition: var(--lp-transition);
+}
+
+.lp-feature-card:hover {
+  transform: translateY(-10px);
+  box-shadow: var(--lp-shadow-hover);
+  border-color: var(--lp-primary);
+}
+
+.lp-feature-icon {
+  font-size: 3rem;
+  margin-bottom: 1.5rem;
+  display: inline-block;
+}
+
+.lp-feature-card h3 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.lp-feature-card p {
+  color: var(--lp-text-light);
+  font-size: 0.95rem;
+}
+
+/* Pricing Section */
+.lp-pricing {
+  padding: 100px 5%;
+  background: var(--lp-bg);
+}
+
+.lp-pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  align-items: center;
+}
+
+.lp-price-card {
+  background: #fff;
+  border-radius: var(--lp-radius);
+  padding: 3rem 2.5rem;
+  box-shadow: var(--lp-shadow);
+  position: relative;
+  border: 1px solid var(--lp-border);
+  transition: var(--lp-transition);
+  display: flex;
+  flex-direction: column;
+}
+
+.lp-price-card:hover {
+  transform: translateY(-10px);
+  box-shadow: var(--lp-shadow-hover);
+}
+
+.lp-popular {
+  transform: scale(1.05);
+  border: 2px solid var(--lp-primary);
+  box-shadow: 0 20px 50px rgba(196, 154, 108, 0.2);
+  z-index: 1;
+}
+
+.lp-popular:hover {
+  transform: scale(1.05) translateY(-10px);
+}
+
+.lp-popular-badge {
+  position: absolute;
+  top: -15px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--lp-primary);
+  color: #fff;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.lp-price-header {
+  text-align: center;
+  margin-bottom: 2rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.lp-price-header h3 {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 1.2rem;
+  color: var(--lp-text-light);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 1rem;
+}
+
+.lp-price {
+  font-family: 'Playfair Display', serif;
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--lp-primary);
+}
+
+.lp-price-features {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 2.5rem;
+  flex-grow: 1;
+}
+
+.lp-price-features li {
+  padding: 12px 0;
+  font-size: 0.95rem;
+  color: var(--lp-text);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.lp-disabled {
+  opacity: 0.4;
+}
+
+/* Footer CTA */
+.lp-footer {
+  background: var(--lp-primary);
+  color: #fff;
+  padding: 100px 5% 50px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.lp-footer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('https://www.transparenttextures.com/patterns/cubes.png');
+  opacity: 0.1;
+  z-index: 1;
+}
+
+.lp-footer > * {
+  position: relative;
+  z-index: 2;
+}
+
+.lp-footer h2 {
+  color: #fff;
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.lp-footer p {
+  font-size: 1.2rem;
+  margin-bottom: 2.5rem;
+  opacity: 0.9;
+}
+
+.lp-footer .lp-btn-primary {
+  background: #fff;
+  color: var(--lp-primary);
+}
+
+.lp-footer .lp-btn-primary:hover {
+  background: var(--lp-bg);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+.lp-footer-bottom {
+  margin-top: 80px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255,255,255,0.2);
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+  .lp-hero {
+    flex-direction: column;
+    text-align: center;
+    padding-top: 120px;
+  }
+  
+  .lp-title {
+    font-size: 3rem;
+  }
+  
+  .lp-hero-actions {
+    justify-content: center;
+  }
+  
+  .lp-popular {
+    transform: scale(1);
+  }
+  
+  .lp-popular:hover {
+    transform: translateY(-10px);
+  }
+}
+
+@media (max-width: 768px) {
+  .lp-nav-links {
+    display: none; /* simple mobile nav */
+  }
+  
+  .lp-title {
+    font-size: 2.5rem;
+  }
+  
+  .lp-phone-mockup {
+    width: 260px;
+    height: 520px;
+  }
+}

@@ -13,11 +13,13 @@ import Guestbook from './components/Guestbook';
 import Gift from './components/Gift';
 import Closing from './components/Closing';
 import MusicPlayer from './components/MusicPlayer';
+import LandingPage from './components/LandingPage';
 
 export default function App() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [coupleId, setCoupleId] = useState('contoh-satu');
+  const [coupleId, setCoupleId] = useState(null);
+  const [isLandingPage, setIsLandingPage] = useState(false);
 
   useEffect(() => {
     // Scroll Reveal Logic
@@ -46,7 +48,18 @@ export default function App() {
       const pathParts = window.location.pathname.split('/').filter(p => p && !p.includes('.html'));
       if (pathParts.length > 0) id = pathParts[pathParts.length - 1];
     }
-    if (!id || id === 'project%20wedding' || id === 'project wedding') id = 'contoh-satu';
+    
+    if (id === 'dev') {
+      window.location.href = '/dev.html';
+      return;
+    }
+    
+    if (!id || id === 'project%20wedding' || id === 'project wedding') {
+      setIsLandingPage(true);
+      setLoading(false);
+      return;
+    }
+    
     setCoupleId(id);
 
     async function loadData() {
@@ -80,6 +93,7 @@ export default function App() {
   }, []);
 
   if (loading) return <div style={{textAlign: 'center', padding: '100px'}}>Loading...</div>;
+  if (isLandingPage) return <LandingPage />;
   if (!data) return <div style={{textAlign: 'center', padding: '100px'}}>Undangan Tidak Ditemukan</div>;
 
   return (

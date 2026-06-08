@@ -1,0 +1,138 @@
+import React from 'react';
+import './LandingPage.css';
+
+export default function LandingPage() {
+  return (
+    <div className="lp-container">
+      {/* Navigation */}
+      <nav className="lp-nav">
+        <div className="lp-logo">VowDigital</div>
+        <div className="lp-nav-links">
+          <a href="#features">Fitur</a>
+          <a href="#pricing">Harga</a>
+          <a href="#contact" className="lp-btn lp-btn-outline">Hubungi Kami</a>
+        </div>
+      </nav>
+
+      {/* Hero Section */}
+      <section className="lp-hero">
+        <div className="lp-hero-content">
+          <h1 className="lp-title">Undangan Digital Premium & Elegan</h1>
+          <p className="lp-subtitle">
+            Buat momen pernikahan Anda tak terlupakan dengan undangan digital interaktif, mewah, dan mudah dibagikan.
+          </p>
+          <div className="lp-hero-actions">
+            <a href="#pricing" className="lp-btn lp-btn-primary">Lihat Paket Harga</a>
+            <a href="#features" className="lp-btn lp-btn-secondary">Jelajahi Fitur</a>
+          </div>
+        </div>
+        <div className="lp-hero-image-wrapper">
+          <div className="lp-hero-image-placeholder">
+            {/* We can use CSS to make a mock phone design */}
+            <div className="lp-phone-mockup">
+              <div className="lp-phone-screen">
+                <div className="lp-mock-wedding-cover">
+                  <h2>Romeo & Juliet</h2>
+                  <p>12 . 12 . 2026</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section id="features" className="lp-features">
+        <h2 className="lp-section-title">Mengapa Memilih Kami?</h2>
+        <div className="lp-feature-grid">
+          <div className="lp-feature-card">
+            <div className="lp-feature-icon">✨</div>
+            <h3>Desain Eksklusif</h3>
+            <p>Pilihan tema premium dengan animasi halus (micro-animations) yang memukau tamu undangan Anda.</p>
+          </div>
+          <div className="lp-feature-icon-card lp-feature-card">
+            <div className="lp-feature-icon">🚀</div>
+            <h3>Cepat & Mudah</h3>
+            <p>Undangan langsung jadi tanpa proses rumit. Anda bisa langsung membagikannya dalam hitungan menit.</p>
+          </div>
+          <div className="lp-feature-card">
+            <div className="lp-feature-icon">🎵</div>
+            <h3>Musik & Galeri</h3>
+            <p>Dilengkapi fitur musik latar belakang dan galeri foto romantis untuk membangun suasana.</p>
+          </div>
+          <div className="lp-feature-card">
+            <div className="lp-feature-icon">📖</div>
+            <h3>RSVP & Buku Tamu</h3>
+            <p>Kelola konfirmasi kehadiran dan dapatkan ucapan hangat langsung di dalam satu platform.</p>
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing Section */}
+      <section id="pricing" className="lp-pricing">
+        <h2 className="lp-section-title">Pilih Paket Undangan Anda</h2>
+        <div className="lp-pricing-grid">
+          <div className="lp-price-card">
+            <div className="lp-price-header">
+              <h3>Basic</h3>
+              <div className="lp-price">Rp 49.000</div>
+            </div>
+            <ul className="lp-price-features">
+              <li>✔️ Tema Standard</li>
+              <li>✔️ Informasi Acara</li>
+              <li>✔️ Navigasi Lokasi (Google Maps)</li>
+              <li>✔️ Galeri (Max 5 Foto)</li>
+              <li className="lp-disabled">❌ Musik Latar</li>
+              <li className="lp-disabled">❌ RSVP & Buku Tamu</li>
+            </ul>
+            <a href="https://wa.me/6281234567890?text=Halo%20saya%20tertarik%20dengan%20Paket%20Basic" className="lp-btn lp-btn-outline lp-full-width">Pilih Basic</a>
+          </div>
+
+          <div className="lp-price-card lp-popular">
+            <div className="lp-popular-badge">Terpopuler</div>
+            <div className="lp-price-header">
+              <h3>Premium</h3>
+              <div className="lp-price">Rp 99.000</div>
+            </div>
+            <ul className="lp-price-features">
+              <li>✔️ Tema Premium (Animasi Eksklusif)</li>
+              <li>✔️ Informasi Acara & Hitung Mundur</li>
+              <li>✔️ Navigasi Lokasi (Google Maps)</li>
+              <li>✔️ Galeri (Max 15 Foto)</li>
+              <li>✔️ Musik Latar Pilihan</li>
+              <li>✔️ RSVP & Buku Tamu</li>
+              <li>✔️ Kisah Cinta (Love Story)</li>
+            </ul>
+            <a href="https://wa.me/6281234567890?text=Halo%20saya%20tertarik%20dengan%20Paket%20Premium" className="lp-btn lp-btn-primary lp-full-width">Pilih Premium</a>
+          </div>
+
+          <div className="lp-price-card">
+            <div className="lp-price-header">
+              <h3>Custom</h3>
+              <div className="lp-price">Rp 249.000</div>
+            </div>
+            <ul className="lp-price-features">
+              <li>✔️ Semua Fitur Premium</li>
+              <li>✔️ Custom Desain Tema</li>
+              <li>✔️ Custom Domain (.com)</li>
+              <li>✔️ Galeri Tanpa Batas</li>
+              <li>✔️ Filter Instagram Khusus</li>
+              <li>✔️ Prioritas Support 24/7</li>
+            </ul>
+            <a href="https://wa.me/6281234567890?text=Halo%20saya%20tertarik%20dengan%20Paket%20Custom" className="lp-btn lp-btn-outline lp-full-width">Hubungi Kami</a>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer CTA */}
+      <footer id="contact" className="lp-footer">
+        <h2>Siap membagikan hari bahagia Anda?</h2>
+        <p>Hubungi tim kami sekarang dan dapatkan penawaran spesial!</p>
+        <a href="https://wa.me/6281234567890" className="lp-btn lp-btn-primary lp-btn-large">Hubungi via WhatsApp</a>
+        <div className="lp-footer-bottom">
+          <p>&copy; {new Date().getFullYear()} VowDigital. All rights reserved.</p>
+        </div>
+      </footer>
+    </div>
+  );
+}
