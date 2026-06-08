@@ -10,9 +10,11 @@ import {
   getDocs, 
   doc, 
   setDoc, 
-  deleteDoc 
+  deleteDoc,
+  query,
+  orderBy
 } from 'firebase/firestore';
-import { Link, Eye, Edit2, Trash2, Copy, Send, Download, Upload } from 'lucide-react';
+import { Link, Eye, Edit2, Trash2, Copy, Send, Download, Upload, Users } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import Swal from 'sweetalert2';
 import './DevDashboard.css';
@@ -38,6 +40,14 @@ export default function DevDashboard() {
   const [guestData, setGuestData] = useState([]); // Array of {name, phone}
   const [waTemplate, setWaTemplate] = useState('Kepada Yth. Bapak/Ibu/Saudara/i *{nama_tamu}*,\n\nTanpa mengurangi rasa hormat, perkenankan kami mengundang Bapak/Ibu/Saudara/i untuk hadir dan memberikan doa restu pada acara pernikahan kami.\n\nBerikut link undangan kami:\n{link}\n\nMerupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Saudara/i berkenan hadir di acara pernikahan kami.\n\nTerima kasih.');
   const [generatedLinks, setGeneratedLinks] = useState([]);
+
+  // Guest Data Modal State
+  const [isGuestDataModalOpen, setIsGuestDataModalOpen] = useState(false);
+  const [selectedCoupleForData, setSelectedCoupleForData] = useState(null);
+  const [activeTab, setActiveTab] = useState('rsvp');
+  const [rsvpList, setRsvpList] = useState([]);
+  const [guestbookList, setGuestbookList] = useState([]);
+  const [loadingGuestData, setLoadingGuestData] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -170,6 +180,65 @@ export default function DevDashboard() {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleOpenGuestData = async (couple) => {
+    setSelectedCoupleForData(couple);
+    setActiveTab('rsvp');
+    setRsvpList([]);
+    setGuestbookList([]);
+    setIsGuestDataModalOpen(true);
+    setLoadingGuestData(true);
+    
+    try {
+      // Fetch RSVP
+      const rsvpSnap = await getDocs(query(collection(db, `invitations/${couple.id}/rsvp`), orderBy("timestamp", "desc")));
+      const rsvps = [];
+      rsvpSnap.forEach(d => rsvps.push({ id: d.id, ...d.data() }));
+      setRsvpList(rsvps);
+
+      // Fetch Guestbook
+      const gbSnap = await getDocs(query(collection(db, `invitations/${couple.id}/guestbook`), orderBy("timestamp", "desc")));
+      const gbs = [];
+      gbSnap.forEach(d => gbs.push({ id: d.id, ...d.data() }));
+      setGuestbookList(gbs);
+    } catch (error) {
+      Swal.fire('Error', 'Gagal memuat data tamu: ' + error.message, 'error');
+    } finally {
+      setLoadingGuestData(false);
+    }
+  };
+
+  const exportGuestDataToExcel = () => {
+    const wb = XLSX.utils.book_new();
+    
+    if (rsvpList.length > 0) {
+      const rsvpData = rsvpList.map(r => ({
+        "Nama": r.name,
+        "Status": r.hadir === 'hadir' ? 'Hadir' : 'Tidak Hadir',
+        "Jumlah Orang": r.guest_count || 0,
+        "Waktu": r.timestamp ? r.timestamp.toDate().toLocaleString('id-ID') : '-'
+      }));
+      const wsRsvp = XLSX.utils.json_to_sheet(rsvpData);
+      XLSX.utils.book_append_sheet(wb, wsRsvp, "RSVP");
+    }
+
+    if (guestbookList.length > 0) {
+      const gbData = guestbookList.map(g => ({
+        "Nama": g.name,
+        "Ucapan & Doa": g.message,
+        "Waktu": g.timestamp ? g.timestamp.toDate().toLocaleString('id-ID') : '-'
+      }));
+      const wsGb = XLSX.utils.json_to_sheet(gbData);
+      XLSX.utils.book_append_sheet(wb, wsGb, "Ucapan & Doa");
+    }
+
+    if (rsvpList.length === 0 && guestbookList.length === 0) {
+      Swal.fire('Info', 'Belum ada data untuk diunduh.', 'info');
+      return;
+    }
+
+    XLSX.writeFile(wb, `Data_Tamu_${selectedCoupleForData.id}.xlsx`);
   };
 
   const handleOpenLinkGenerator = (couple) => {
@@ -350,6 +419,7 @@ export default function DevDashboard() {
                       <td>{couple.tanggal_lengkap}</td>
                       <td>
                         <div className="dev-action-btns">
+                          <button onClick={() => handleOpenGuestData(couple)} className="dev-btn-icon" title="Lihat Data Tamu (RSVP & Ucapan)"><Users size={18} /></button>
                           <button onClick={() => handleOpenLinkGenerator(couple)} className="dev-btn-icon" title="Generate Link Tamu"><Link size={18} /></button>
                           <a href={`/?id=${couple.id}`} target="_blank" rel="noreferrer" className="dev-btn-icon" title="Lihat Undangan"><Eye size={18} /></a>
                           <button onClick={() => handleEdit(couple)} className="dev-btn-icon" title="Edit"><Edit2 size={18} /></button>
@@ -591,6 +661,118 @@ export default function DevDashboard() {
                       </table>
                     </div>
                   </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Guest Data Modal */}
+        {isGuestDataModalOpen && selectedCoupleForData && (
+          <div className="dev-modal-overlay">
+            <div className="dev-modal" style={{ maxWidth: '800px' }}>
+              <div className="dev-modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h2>Data Tamu: {selectedCoupleForData.id}</h2>
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                  <button onClick={exportGuestDataToExcel} className="dev-btn dev-btn-sm dev-btn-outline" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', borderColor: '#10b981', color: '#10b981' }}>
+                    <Download size={14} /> Export Excel
+                  </button>
+                  <button className="dev-btn-close" onClick={() => setIsGuestDataModalOpen(false)}>✕</button>
+                </div>
+              </div>
+              
+              <div className="dev-modal-body">
+                <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', borderBottom: '1px solid #e2e8f0' }}>
+                  <button 
+                    onClick={() => setActiveTab('rsvp')}
+                    style={{ padding: '0.75rem 1rem', background: 'none', border: 'none', borderBottom: activeTab === 'rsvp' ? '2px solid var(--dev-primary)' : '2px solid transparent', color: activeTab === 'rsvp' ? 'var(--dev-primary)' : '#64748b', fontWeight: activeTab === 'rsvp' ? '600' : '400', cursor: 'pointer' }}
+                  >
+                    Konfirmasi Kehadiran (RSVP)
+                  </button>
+                  <button 
+                    onClick={() => setActiveTab('guestbook')}
+                    style={{ padding: '0.75rem 1rem', background: 'none', border: 'none', borderBottom: activeTab === 'guestbook' ? '2px solid var(--dev-primary)' : '2px solid transparent', color: activeTab === 'guestbook' ? 'var(--dev-primary)' : '#64748b', fontWeight: activeTab === 'guestbook' ? '600' : '400', cursor: 'pointer' }}
+                  >
+                    Ucapan & Doa ({guestbookList.length})
+                  </button>
+                </div>
+
+                {loadingGuestData ? (
+                  <div style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>Memuat data tamu...</div>
+                ) : (
+                  <>
+                    {activeTab === 'rsvp' && (
+                      <div>
+                        <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', padding: '1rem', background: '#f8fafc', borderRadius: '8px' }}>
+                          <div style={{ flex: 1 }}><strong>Total Hadir:</strong> {rsvpList.filter(r => r.hadir === 'hadir').reduce((sum, r) => sum + (r.guest_count || 1), 0)} Orang</div>
+                          <div style={{ flex: 1 }}><strong>Tidak Hadir:</strong> {rsvpList.filter(r => r.hadir !== 'hadir').length} Orang</div>
+                        </div>
+                        {rsvpList.length === 0 ? (
+                          <div style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>Belum ada konfirmasi kehadiran.</div>
+                        ) : (
+                          <div className="dev-table-container" style={{ maxHeight: '350px', overflowY: 'auto' }}>
+                            <table className="dev-table">
+                              <thead>
+                                <tr>
+                                  <th>Nama Tamu</th>
+                                  <th>Status</th>
+                                  <th>Jumlah</th>
+                                  <th>Waktu</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {rsvpList.map(r => (
+                                  <tr key={r.id}>
+                                    <td><strong>{r.name}</strong></td>
+                                    <td>
+                                      <span style={{ 
+                                        padding: '4px 8px', borderRadius: '4px', fontSize: '0.85rem', fontWeight: '500',
+                                        background: r.hadir === 'hadir' ? '#dcfce7' : '#fee2e2',
+                                        color: r.hadir === 'hadir' ? '#166534' : '#991b1b'
+                                      }}>
+                                        {r.hadir === 'hadir' ? 'Hadir' : 'Tidak Hadir'}
+                                      </span>
+                                    </td>
+                                    <td>{r.hadir === 'hadir' ? `${r.guest_count} Orang` : '-'}</td>
+                                    <td>{r.timestamp ? r.timestamp.toDate().toLocaleString('id-ID') : '-'}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {activeTab === 'guestbook' && (
+                      <div>
+                        {guestbookList.length === 0 ? (
+                          <div style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>Belum ada ucapan & doa.</div>
+                        ) : (
+                          <div className="dev-table-container" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                            <table className="dev-table">
+                              <thead>
+                                <tr>
+                                  <th>Nama Tamu</th>
+                                  <th>Ucapan</th>
+                                  <th>Waktu</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {guestbookList.map(g => (
+                                  <tr key={g.id}>
+                                    <td style={{ whiteSpace: 'nowrap' }}><strong>{g.name}</strong></td>
+                                    <td style={{ maxWidth: '300px', wordWrap: 'break-word', whiteSpace: 'normal' }}>{g.message}</td>
+                                    <td style={{ whiteSpace: 'nowrap' }}>{g.timestamp ? g.timestamp.toDate().toLocaleString('id-ID') : '-'}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>
