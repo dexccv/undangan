@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { Sparkles, Zap, Music, BookOpen, CheckCircle2, XCircle } from 'lucide-react';
+import logoDigitalisasi from '../assets/logo-digitalisasi.png';
 import './LandingPage.css';
 
 export default function LandingPage() {
@@ -22,7 +23,9 @@ export default function LandingPage() {
     <div className="lp-container">
       {/* Navigation */}
       <nav className="lp-nav">
-        <div className="lp-logo">Digitalisasi.id</div>
+        <div className="lp-logo">
+          <img src={logoDigitalisasi} alt="Digitalisasi.id Logo" style={{ height: '40px', objectFit: 'contain' }} />
+        </div>
         <div className="lp-nav-links">
           <a href="#features">Fitur</a>
           <a href="#pricing">Harga</a>
