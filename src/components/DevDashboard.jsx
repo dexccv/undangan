@@ -15,7 +15,6 @@ import {
 import { Link, Eye, Edit2, Trash2, Copy, Send, Download, Upload } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import Swal from 'sweetalert2';
-import logoDigitalisasi from '../assets/logo-digitalisasi.png';
 import './DevDashboard.css';
 
 export default function DevDashboard() {
@@ -258,7 +257,7 @@ export default function DevDashboard() {
       <div className="dev-login-container">
         <div className="dev-login-card">
           <div className="dev-login-header">
-            <img src={logoDigitalisasi} alt="Digitalisasi.id Logo" style={{ height: '48px', marginBottom: '1rem', objectFit: 'contain' }} />
+            <h2>Digitalisasi.id</h2>
             <p>Admin Dashboard Login</p>
           </div>
           <form onSubmit={handleLogin} className="dev-login-form">
@@ -295,8 +294,8 @@ export default function DevDashboard() {
   return (
     <div className="dev-dashboard">
       <nav className="dev-sidebar">
-        <div className="dev-brand" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <img src={logoDigitalisasi} alt="Digitalisasi.id Logo" style={{ height: '32px', objectFit: 'contain' }} />
+        <div className="dev-brand">
+          <h2>Digitalisasi.id</h2>
           <span className="dev-badge">ADMIN</span>
         </div>
         <div className="dev-nav-items">
