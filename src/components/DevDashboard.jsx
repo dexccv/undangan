@@ -14,6 +14,7 @@ import {
 } from 'firebase/firestore';
 import { Link, Eye, Edit2, Trash2, Copy, Send, Download, Upload } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import Swal from 'sweetalert2';
 import logoDigitalisasi from '../assets/logo-digitalisasi.png';
 import './DevDashboard.css';
 
@@ -82,8 +83,8 @@ export default function DevDashboard() {
     setIsLoggingIn(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
-    } catch (err) {
-      setLoginError(err.message);
+    } catch (error) {
+      Swal.fire('Login Gagal', 'Email atau password salah!', 'error');
     } finally {
       setIsLoggingIn(false);
     }
@@ -94,6 +95,10 @@ export default function DevDashboard() {
   };
 
   const fetchCouples = async () => {
+    if (!auth.currentUser) {
+      Swal.fire('Error', 'Harap login kembali.', 'error');
+      return;
+    }
     setLoadingData(true);
     try {
       const querySnapshot = await getDocs(collection(db, 'couples'));
@@ -120,12 +125,24 @@ export default function DevDashboard() {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm(`Apakah Anda yakin ingin menghapus undangan dengan ID: ${id}?`)) {
+    const result = await Swal.fire({
+      title: 'Yakin menghapus?',
+      text: 'Data undangan ini akan dihapus permanen!',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Ya, hapus!',
+      cancelButtonText: 'Batal'
+    });
+
+    if (result.isConfirmed) {
       try {
-        await deleteDoc(doc(db, 'couples', id));
+        await deleteDoc(doc(db, "couples", id));
+        Swal.fire('Terhapus!', 'Undangan berhasil dihapus.', 'success');
         fetchCouples();
-      } catch (error) {
-        alert("Gagal menghapus: " + error.message);
+      } catch (err) {
+        Swal.fire('Error!', err.message, 'error');
       }
     }
   };
@@ -136,7 +153,7 @@ export default function DevDashboard() {
     const docId = formData.id.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
     
     if (!docId) {
-      alert("ID Pasangan tidak boleh kosong!");
+      Swal.fire('Peringatan', 'ID Pasangan tidak boleh kosong!', 'warning');
       setIsSaving(false);
       return;
     }
@@ -146,11 +163,11 @@ export default function DevDashboard() {
 
     try {
       await setDoc(doc(db, "couples", docId), dataToSave);
-      alert("Data berhasil disimpan!");
+      Swal.fire({ title: 'Berhasil!', text: 'Data berhasil disimpan!', icon: 'success', timer: 2000, showConfirmButton: false });
       setIsFormOpen(false);
       fetchCouples();
     } catch (err) {
-      alert("Error: " + err.message);
+      Swal.fire('Error!', err.message, 'error');
     } finally {
       setIsSaving(false);
     }
@@ -207,7 +224,7 @@ export default function DevDashboard() {
 
   const handleGenerateLinks = () => {
     if (guestData.length === 0) {
-      alert("Belum ada data tamu! Silakan import dari Excel terlebih dahulu.");
+      Swal.fire('Peringatan', 'Belum ada data tamu! Silakan import dari Excel terlebih dahulu.', 'warning');
       return;
     }
     
@@ -232,7 +249,7 @@ export default function DevDashboard() {
 
   const handleCopyMessage = (msg) => {
     navigator.clipboard.writeText(msg).then(() => {
-      alert('Pesan disalin ke clipboard!');
+      Swal.fire({ title: 'Tersalin!', text: 'Pesan disalin ke clipboard.', icon: 'success', timer: 1500, showConfirmButton: false });
     });
   };
 
