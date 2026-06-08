@@ -209,6 +209,29 @@ export default function DevDashboard() {
     }
   };
 
+  const handleDeleteGuestbook = async (guestbookId) => {
+    const result = await Swal.fire({
+      title: 'Hapus Ucapan?',
+      text: 'Ucapan & Doa ini akan dihapus permanen!',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Ya, hapus!',
+      cancelButtonText: 'Batal'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await deleteDoc(doc(db, `invitations/${selectedCoupleForData.id}/guestbook`, guestbookId));
+        setGuestbookList(prev => prev.filter(g => g.id !== guestbookId));
+        Swal.fire('Terhapus!', 'Ucapan berhasil dihapus.', 'success');
+      } catch (err) {
+        Swal.fire('Error!', err.message, 'error');
+      }
+    }
+  };
+
   const exportGuestDataToExcel = () => {
     const wb = XLSX.utils.book_new();
     
@@ -756,6 +779,7 @@ export default function DevDashboard() {
                                   <th>Nama Tamu</th>
                                   <th>Ucapan</th>
                                   <th>Waktu</th>
+                                  <th>Aksi</th>
                                 </tr>
                               </thead>
                               <tbody>
@@ -764,6 +788,16 @@ export default function DevDashboard() {
                                     <td style={{ whiteSpace: 'nowrap' }}><strong>{g.name}</strong></td>
                                     <td style={{ maxWidth: '300px', wordWrap: 'break-word', whiteSpace: 'normal' }}>{g.message}</td>
                                     <td style={{ whiteSpace: 'nowrap' }}>{g.timestamp ? g.timestamp.toDate().toLocaleString('id-ID') : '-'}</td>
+                                    <td>
+                                      <button 
+                                        onClick={() => handleDeleteGuestbook(g.id)} 
+                                        className="dev-btn-icon" 
+                                        style={{ color: '#ef4444' }} 
+                                        title="Hapus Ucapan"
+                                      >
+                                        <Trash2 size={16} />
+                                      </button>
+                                    </td>
                                   </tr>
                                 ))}
                               </tbody>
