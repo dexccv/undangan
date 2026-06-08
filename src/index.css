@@ -1286,12 +1286,12 @@ footer i {
 /* =========================================================
    FLORAL FRAME DECORATION (Biru & Emas)
    ========================================================= */
-section {
+#cover, #countdown, #parents, #story, #gallery, #guestbook, #rsvp {
   position: relative;
   /* overflow: hidden; */ /* Removing overflow hidden to avoid clipping shadows */
 }
 
-section::before, #cover::before {
+#cover::before, #countdown::before, #parents::before, #story::before, #gallery::before, #guestbook::before, #rsvp::before {
   border-radius: 0; right: auto; left: 0;
   content: '';
   position: absolute;
@@ -1310,12 +1310,12 @@ section::before, #cover::before {
   opacity: 1;
 }
 
-section::before, #cover::before {
+#cover::before, #countdown::before, #parents::before, #story::before, #gallery::before, #guestbook::before, #rsvp::before {
   top: 0;
 }
 
 /* Pastikan semua elemen di dalam section berada di atas frame */
-section > * {
+#cover > *, #countdown > *, #parents > *, #story > *, #gallery > *, #guestbook > *, #rsvp > * {
   position: relative;
   z-index: 2;
 }
@@ -1326,7 +1326,7 @@ section > * {
 }
 
 @media (max-width: 600px) {
-  section::before, #cover::before {
+  #cover::before, #countdown::before, #parents::before, #story::before, #gallery::before, #guestbook::before, #rsvp::before {
   border-radius: 0; right: auto; left: 0;
     height: 200px;
     background-size: cover;
