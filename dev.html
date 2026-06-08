@@ -48,7 +48,7 @@
       <div class="card">
         <div class="card-header bg-dark">ID Pasangan (URL)</div>
         <div class="card-body">
-          <label>Masukkan ID Pendek (Contoh: <strong>nadia-agus</strong>). Ini akan menjadi link mereka: <code>website.com/nadia-agus/</code></label>
+          <label>Masukkan ID Pendek (Contoh: <strong>nadia-agus</strong>). Ini akan menjadi link mereka: <code>tamu-undangan.vercel.app/nadia-agus/</code></label>
           <input type="text" id="couple_id" class="form-control" placeholder="nadia-agus" required>
         </div>
       </div>
@@ -216,7 +216,7 @@
 
     try {
       await setDoc(doc(db, "couples", id), data);
-      alert("Data pasangan berhasil disimpan!\nLink Undangan: website.com/" + id + "/");
+      alert("Data pasangan berhasil disimpan!\nLink Undangan: tamu-undangan.vercel.app/" + id + "/");
     } catch (err) {
       alert("Error: " + err.message);
     } finally {
@@ -228,3 +228,4 @@
 </script>
 </body>
 </html>
+
