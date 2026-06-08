@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>CMS Developer - Wedding Invitation</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background-color: #f4f6f9; padding: 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    .card { margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: none; }
+    .card-header { background-color: #198754; color: white; font-weight: bold; }
+    #login-section, #cms-section { display: none; }
+  </style>
+</head>
+<body>
+
+<div class="container" style="max-width: 800px;">
+  <h2 class="mb-4 text-center">Dashboard Developer CMS</h2>
+
+  <!-- Bagian Login -->
+  <div id="login-section" class="card mx-auto" style="max-width: 400px;">
+    <div class="card-header bg-primary text-center">Login Developer</div>
+    <div class="card-body">
+      <div class="mb-3">
+        <label>Email</label>
+        <input type="email" id="login-email" class="form-control" placeholder="admin@domain.com">
+      </div>
+      <div class="mb-3">
+        <label>Password</label>
+        <input type="password" id="login-password" class="form-control" placeholder="******">
+      </div>
+      <button id="btn-login" class="btn btn-primary w-100">Login</button>
+      <div id="login-error" class="text-danger mt-2 text-center" style="font-size: 0.9rem;"></div>
+      
+      <hr>
+      <p class="text-muted text-center" style="font-size: 0.8rem;">Jika belum punya akun, buat akun baru 1x di sini:</p>
+      <button id="btn-register" class="btn btn-outline-secondary w-100 btn-sm">Buat Akun Developer (Satu Kali)</button>
+    </div>
+  </div>
+
+  <!-- Bagian CMS Form -->
+  <div id="cms-section">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <p class="mb-0">Login sebagai: <strong id="user-email"></strong></p>
+      <button id="btn-logout" class="btn btn-danger btn-sm">Logout</button>
+    </div>
+
+    <form id="cms-form">
+      <div class="card">
+        <div class="card-header bg-dark">ID Pasangan (URL)</div>
+        <div class="card-body">
+          <label>Masukkan ID Pendek (Contoh: <strong>nadia-agus</strong>). Ini akan menjadi link mereka: <code>website.com/nadia-agus/</code></label>
+          <input type="text" id="couple_id" class="form-control" placeholder="nadia-agus" required>
+        </div>
+      </div>
+
+      <div class="row">
+        <!-- Mempelai Wanita -->
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header">Mempelai Wanita</div>
+            <div class="card-body">
+              <label>Panggilan</label>
+              <input type="text" id="wanita_panggilan" class="form-control mb-2" value="Nadia">
+              <label>Lengkap</label>
+              <input type="text" id="wanita_lengkap" class="form-control mb-2" value="Nadia Febriani Putri">
+              <label>Orang Tua</label>
+              <input type="text" id="wanita_ortu" class="form-control mb-2" value="Bapak Sefudin & Ibu Nani Aryanti">
+              <label>No. Rek BCA</label>
+              <input type="text" id="rekening_wanita" class="form-control" value="472485570">
+            </div>
+          </div>
+        </div>
+        <!-- Mempelai Pria -->
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header">Mempelai Pria</div>
+            <div class="card-body">
+              <label>Panggilan</label>
+              <input type="text" id="pria_panggilan" class="form-control mb-2" value="Agus">
+              <label>Lengkap</label>
+              <input type="text" id="pria_lengkap" class="form-control mb-2" value="Agus An'im Falakhuddin">
+              <label>Orang Tua</label>
+              <input type="text" id="pria_ortu" class="form-control mb-2" value="Bapak Darsono & Ibu Janatun">
+              <label>No. Rek BCA</label>
+              <input type="text" id="rekening_pria" class="form-control" value="585001016911532">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">Waktu & Lokasi Acara</div>
+        <div class="card-body row">
+          <div class="col-md-4 mb-2"><label>Tgl Cover</label><input type="text" id="tanggal_cover" class="form-control" value="07 . 06 . 2026"></div>
+          <div class="col-md-4 mb-2"><label>Tgl Lengkap</label><input type="text" id="tanggal_lengkap" class="form-control" value="Minggu, 7 Juni 2026"></div>
+          <div class="col-md-4 mb-2"><label>Target Countdown</label><input type="text" id="target_countdown" class="form-control" value="2026-06-07T10:00:00+07:00"></div>
+          <div class="col-md-6 mb-2"><label>Jam Akad</label><input type="text" id="waktu_akad" class="form-control" value="10:00 WIB"></div>
+          <div class="col-md-6 mb-2"><label>Jam Resepsi</label><input type="text" id="waktu_resepsi" class="form-control" value="13:00 WIB"></div>
+          <div class="col-md-6 mb-2"><label>Lokasi Akad</label><input type="text" id="lokasi_akad" class="form-control" value="Rumah Mempelai Wanita"></div>
+          <div class="col-md-6 mb-2"><label>Lokasi Resepsi</label><input type="text" id="lokasi_resepsi" class="form-control" value="Kediaman Mempelai Wanita"></div>
+          <div class="col-md-12 mb-2"><label>Alamat Baris 1</label><input type="text" id="alamat_baris1" class="form-control" value="Desa Pagongan Jl. Gondangdia Rt 06 Rw 02"></div>
+          <div class="col-md-12 mb-2"><label>Alamat Baris 2</label><input type="text" id="alamat_baris2" class="form-control" value="Kec. Dukuhturi, Kabupaten Tegal"></div>
+          <div class="col-md-12 mb-2"><label>Link Maps</label><input type="text" id="link_maps" class="form-control" value="https://www.google.com/maps/search/Desa+Pagongan+Jl.Gondangdia+Rt+06+Rw+02+Kec+Dukuhturi+Tegal"></div>
+          <div class="col-md-12 mb-2"><label>URL Gambar Border</label><input type="text" id="url_border" class="form-control" value="assets/floral_border.png"></div>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-success w-100 py-3 mb-5 fw-bold" id="btn-save">SIMPAN KE DATABASE</button>
+    </form>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
+  import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
+  import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAMKj34dJ3jt8Q_uW3rQ6Pn3kypiLiS3OA",
+    authDomain: "undangan-5cf2f.firebaseapp.com",
+    projectId: "undangan-5cf2f",
+    storageBucket: "undangan-5cf2f.firebasestorage.app",
+    messagingSenderId: "156698309976",
+    appId: "1:156698309976:web:26aea66e4ba22cdfe2212d",
+    measurementId: "G-889VC8X9K4"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  const loginSec = document.getElementById('login-section');
+  const cmsSec = document.getElementById('cms-section');
+  const errBox = document.getElementById('login-error');
+
+  // Cek Status Login
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      loginSec.style.display = 'none';
+      cmsSec.style.display = 'block';
+      document.getElementById('user-email').textContent = user.email;
+    } else {
+      loginSec.style.display = 'block';
+      cmsSec.style.display = 'none';
+    }
+  });
+
+  // Fungsi Login
+  document.getElementById('btn-login').addEventListener('click', async () => {
+    const e = document.getElementById('login-email').value;
+    const p = document.getElementById('login-password').value;
+    errBox.textContent = "Loading...";
+    try {
+      await signInWithEmailAndPassword(auth, e, p);
+      errBox.textContent = "";
+    } catch (err) {
+      errBox.textContent = "Error: " + err.message;
+    }
+  });
+
+  // Fungsi Register (Hanya untuk buat akun pertama kali)
+  document.getElementById('btn-register').addEventListener('click', async () => {
+    const e = document.getElementById('login-email').value;
+    const p = document.getElementById('login-password').value;
+    errBox.textContent = "Loading...";
+    try {
+      await createUserWithEmailAndPassword(auth, e, p);
+      alert("Akun Developer berhasil dibuat! Silakan gunakan akun ini seterusnya.");
+      errBox.textContent = "";
+    } catch (err) {
+      errBox.textContent = "Error: " + err.message;
+    }
+  });
+
+  // Fungsi Logout
+  document.getElementById('btn-logout').addEventListener('click', () => {
+    signOut(auth);
+  });
+
+  // Fungsi Simpan ke Database
+  document.getElementById('cms-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btn-save');
+    btn.disabled = true;
+    btn.textContent = "MENYIMPAN...";
+
+    const id = document.getElementById('couple_id').value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
+    if (!id) {
+        alert("ID Pasangan tidak boleh kosong!");
+        btn.disabled = false;
+        btn.textContent = "SIMPAN KE DATABASE";
+        return;
+    }
+
+    const data = {
+      wanita_panggilan: document.getElementById('wanita_panggilan').value,
+      wanita_lengkap: document.getElementById('wanita_lengkap').value,
+      wanita_ortu: document.getElementById('wanita_ortu').value,
+      rekening_wanita: document.getElementById('rekening_wanita').value,
+      pria_panggilan: document.getElementById('pria_panggilan').value,
+      pria_lengkap: document.getElementById('pria_lengkap').value,
+      pria_ortu: document.getElementById('pria_ortu').value,
+      rekening_pria: document.getElementById('rekening_pria').value,
+      tanggal_cover: document.getElementById('tanggal_cover').value,
+      tanggal_lengkap: document.getElementById('tanggal_lengkap').value,
+      target_countdown: document.getElementById('target_countdown').value,
+      waktu_akad: document.getElementById('waktu_akad').value,
+      waktu_resepsi: document.getElementById('waktu_resepsi').value,
+      lokasi_akad: document.getElementById('lokasi_akad').value,
+      lokasi_resepsi: document.getElementById('lokasi_resepsi').value,
+      alamat_baris1: document.getElementById('alamat_baris1').value,
+      alamat_baris2: document.getElementById('alamat_baris2').value,
+      link_maps: document.getElementById('link_maps').value,
+      url_border: document.getElementById('url_border').value
+    };
+
+    try {
+      await setDoc(doc(db, "couples", id), data);
+      alert("Data pasangan berhasil disimpan!\nLink Undangan: website.com/" + id + "/");
+    } catch (err) {
+      alert("Error: " + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "SIMPAN KE DATABASE";
+    }
+  });
+
+</script>
+</body>
+</html>
