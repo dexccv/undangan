@@ -17,7 +17,7 @@ import MusicPlayer from './components/MusicPlayer';
 export default function App() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [coupleId, setCoupleId] = useState('nadia-agus');
+  const [coupleId, setCoupleId] = useState('contoh-satu');
 
   useEffect(() => {
     // Scroll Reveal Logic
@@ -46,7 +46,7 @@ export default function App() {
       const pathParts = window.location.pathname.split('/').filter(p => p && !p.includes('.html'));
       if (pathParts.length > 0) id = pathParts[pathParts.length - 1];
     }
-    if (!id || id === 'project%20wedding' || id === 'project wedding') id = 'nadia-agus';
+    if (!id || id === 'project%20wedding' || id === 'project wedding') id = 'contoh-satu';
     setCoupleId(id);
 
     async function loadData() {
