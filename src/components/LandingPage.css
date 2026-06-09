@@ -145,18 +145,18 @@ a {
   gap: 4rem;
   max-width: 1400px;
   margin: 0 auto;
-  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .lp-spacer-full {
-  height: 100vh;
+  height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .lp-spacer-half {
-  height: 50vh;
+  height: 50dvh;
 }
 
 .lp-hero-content {
@@ -181,6 +181,7 @@ a {
 
 .lp-hero-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 1rem;
 }
 
@@ -296,15 +297,12 @@ a {
 .lp-features {
   padding: 100px 5%;
   background: transparent;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+  min-height: 100dvh;
 }
 
 .lp-feature-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 2rem;
   max-width: 1200px;
   margin: 0 auto;
@@ -348,10 +346,7 @@ a {
 .lp-pricing {
   padding: 100px 5%;
   background: transparent;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+  min-height: 100dvh;
 }
 
 .lp-pricing-grid {
@@ -459,10 +454,7 @@ a {
   text-align: center;
   position: relative;
   overflow: hidden;
-  min-height: 50vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+  min-height: 50dvh;
 }
 
 .lp-footer::before {
@@ -518,6 +510,7 @@ a {
     flex-direction: column;
     text-align: center;
     padding-top: 120px;
+    gap: 2rem;
   }
   
   .lp-title {
@@ -533,7 +526,7 @@ a {
   }
   
   .lp-popular:hover {
-    transform: translateY(-10px);
+    transform: translateY(-5px);
   }
 }
 

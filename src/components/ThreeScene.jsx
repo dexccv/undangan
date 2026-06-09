@@ -152,7 +152,7 @@ export default function ThreeScene({ children }) {
   }, []);
 
   return (
-    <div style={{ width: '100vw', height: '100vh', overflow: 'hidden', position: 'fixed', top: 0, left: 0, zIndex: 0 }}>
+    <div style={{ width: '100%', height: '100dvh', overflow: 'hidden', position: 'fixed', top: 0, left: 0, zIndex: 0 }}>
       <Canvas camera={{ position: [0, 0, 5], fov: 60 }} dpr={[1, 1.5]} performance={{ min: 0.5 }}>
         <ambientLight intensity={0.5} />
         <directionalLight position={[10, 10, 5]} intensity={1} color="#ffffff" />
@@ -161,7 +161,7 @@ export default function ThreeScene({ children }) {
         <ScrollControls pages={pages} damping={0.2}>
           <CinematicExperience />
           
-          <Scroll html style={{ width: '100vw', pointerEvents: 'none' }}>
+          <Scroll html style={{ width: '100%', pointerEvents: 'none' }}>
             <div style={{ pointerEvents: 'auto' }}>
               {children}
             </div>
