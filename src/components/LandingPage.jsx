@@ -1,24 +1,9 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Sparkles, Zap, Music, BookOpen, CheckCircle2, XCircle } from 'lucide-react';
 import ThreeScene from './ThreeScene';
 import './LandingPage.css';
 
 export default function LandingPage() {
-  useEffect(() => {
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('lp-visible');
-        }
-      });
-    }, { threshold: 0.1 });
-
-    const elements = document.querySelectorAll('.lp-reveal');
-    elements.forEach(el => observer.observe(el));
-
-    return () => observer.disconnect();
-  }, []);
-
   return (
     <ThreeScene>
       <div className="lp-container">
@@ -56,24 +41,24 @@ export default function LandingPage() {
 
         {/* Features Section (Page 4) */}
         <section id="features" className="lp-features" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <h2 className="lp-section-title lp-reveal">Mengapa Memilih Kami?</h2>
+          <h2 className="lp-section-title">Mengapa Memilih Kami?</h2>
           <div className="lp-feature-grid">
-            <div className="lp-feature-card lp-reveal" style={{ transitionDelay: '100ms' }}>
+            <div className="lp-feature-card" style={{ transitionDelay: '100ms' }}>
               <div className="lp-feature-icon"><Sparkles size={40} color="var(--lp-primary)" /></div>
               <h3>Desain Eksklusif</h3>
               <p>Pilihan tema premium dengan animasi halus (micro-animations) yang memukau tamu undangan Anda.</p>
             </div>
-            <div className="lp-feature-icon-card lp-feature-card lp-reveal" style={{ transitionDelay: '200ms' }}>
+            <div className="lp-feature-icon-card lp-feature-card" style={{ transitionDelay: '200ms' }}>
               <div className="lp-feature-icon"><Zap size={40} color="var(--lp-primary)" /></div>
               <h3>Cepat & Mudah</h3>
               <p>Undangan langsung jadi tanpa proses rumit. Anda bisa langsung membagikannya dalam hitungan menit.</p>
             </div>
-            <div className="lp-feature-card lp-reveal" style={{ transitionDelay: '300ms' }}>
+            <div className="lp-feature-card" style={{ transitionDelay: '300ms' }}>
               <div className="lp-feature-icon"><Music size={40} color="var(--lp-primary)" /></div>
               <h3>Musik & Galeri</h3>
               <p>Dilengkapi fitur musik latar belakang dan galeri foto romantis untuk membangun suasana.</p>
             </div>
-            <div className="lp-feature-card lp-reveal" style={{ transitionDelay: '400ms' }}>
+            <div className="lp-feature-card" style={{ transitionDelay: '400ms' }}>
               <div className="lp-feature-icon"><BookOpen size={40} color="var(--lp-primary)" /></div>
               <h3>RSVP & Buku Tamu</h3>
               <p>Kelola konfirmasi kehadiran dan dapatkan ucapan hangat langsung di dalam satu platform.</p>
@@ -83,9 +68,9 @@ export default function LandingPage() {
 
         {/* Pricing Section (Page 5) */}
         <section id="pricing" className="lp-pricing" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <h2 className="lp-section-title lp-reveal">Pilih Paket Undangan Anda</h2>
+          <h2 className="lp-section-title">Pilih Paket Undangan Anda</h2>
           <div className="lp-pricing-grid">
-            <div className="lp-price-card lp-reveal" style={{ transitionDelay: '100ms' }}>
+            <div className="lp-price-card" style={{ transitionDelay: '100ms' }}>
               <div className="lp-price-header">
                 <h3>Basic</h3>
                 <div className="lp-price">Rp 49.000</div>
@@ -101,7 +86,7 @@ export default function LandingPage() {
               <a href="https://wa.me/6281234567890?text=Halo%20saya%20tertarik%20dengan%20Paket%20Basic" className="lp-btn lp-btn-outline lp-full-width">Pilih Basic</a>
             </div>
 
-            <div className="lp-price-card lp-popular lp-reveal" style={{ transitionDelay: '200ms' }}>
+            <div className="lp-price-card lp-popular" style={{ transitionDelay: '200ms' }}>
               <div className="lp-popular-badge">Terpopuler</div>
               <div className="lp-price-header">
                 <h3>Premium</h3>
@@ -119,7 +104,7 @@ export default function LandingPage() {
               <a href="https://wa.me/6281234567890?text=Halo%20saya%20tertarik%20dengan%20Paket%20Premium" className="lp-btn lp-btn-primary lp-full-width">Pilih Premium</a>
             </div>
 
-            <div className="lp-price-card lp-reveal" style={{ transitionDelay: '300ms' }}>
+            <div className="lp-price-card" style={{ transitionDelay: '300ms' }}>
               <div className="lp-price-header">
                 <h3>Custom</h3>
                 <div className="lp-price">Rp 249.000</div>
@@ -139,10 +124,10 @@ export default function LandingPage() {
 
         {/* Footer CTA */}
         <footer id="contact" className="lp-footer" style={{ minHeight: '50vh', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <h2 className="lp-reveal">Siap membagikan hari bahagia Anda?</h2>
-          <p className="lp-reveal" style={{ transitionDelay: '100ms' }}>Hubungi tim kami sekarang dan dapatkan penawaran spesial!</p>
+          <h2>Siap membagikan hari bahagia Anda?</h2>
+          <p style={{ transitionDelay: '100ms' }}>Hubungi tim kami sekarang dan dapatkan penawaran spesial!</p>
           <div style={{ display: 'flex', justifyContent: 'center' }}>
-            <a href="https://wa.me/6281234567890" className="lp-btn lp-btn-primary lp-btn-large lp-reveal" style={{ transitionDelay: '200ms' }}>Hubungi via WhatsApp</a>
+            <a href="https://wa.me/6281234567890" className="lp-btn lp-btn-primary lp-btn-large" style={{ transitionDelay: '200ms' }}>Hubungi via WhatsApp</a>
           </div>
           <div className="lp-footer-bottom">
             <p>&copy; {new Date().getFullYear()} Digitalisasi.id. All rights reserved.</p>
