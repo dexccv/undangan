@@ -1,6 +1,6 @@
 import React, { useRef, useMemo } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Environment, Preload, ScrollControls, Scroll, useScroll, Float, MeshTransmissionMaterial } from '@react-three/drei';
+import { Environment, Preload, ScrollControls, Scroll, useScroll } from '@react-three/drei';
 import * as THREE from 'three';
 
 function CinematicExperience() {
@@ -108,22 +108,17 @@ function CinematicExperience() {
       {/* Concept A: Tunnel of Floating Images/Glass */}
       <group ref={tunnelRef}>
         {tunnelPlanes.map((plane, i) => (
-          <Float key={i} speed={2} rotationIntensity={2} floatIntensity={2}>
-            <mesh position={plane.position} rotation={plane.rotation} scale={plane.scale}>
-              <planeGeometry args={[2, 3]} />
-              <MeshTransmissionMaterial 
-                backside
-                samples={4}
-                thickness={0.5}
-                roughness={0.2}
-                clearcoat={1}
-                clearcoatRoughness={0.1}
-                transmission={0.9}
-                ior={1.5}
-                color="#e8e0d5"
-              />
-            </mesh>
-          </Float>
+          <mesh key={i} position={plane.position} rotation={plane.rotation} scale={plane.scale}>
+            <planeGeometry args={[2, 3]} />
+            <meshStandardMaterial 
+              color="#e8e0d5"
+              transparent
+              opacity={0.3}
+              roughness={0.1}
+              metalness={0.8}
+              side={THREE.DoubleSide}
+            />
+          </mesh>
         ))}
       </group>
 
@@ -146,7 +141,7 @@ function CinematicExperience() {
 export default function ThreeScene({ children }) {
   return (
     <div style={{ width: '100vw', height: '100vh', overflow: 'hidden', position: 'fixed', top: 0, left: 0, zIndex: 0 }}>
-      <Canvas camera={{ position: [0, 0, 5], fov: 60 }}>
+      <Canvas camera={{ position: [0, 0, 5], fov: 60 }} dpr={[1, 1.5]} performance={{ min: 0.5 }}>
         <ambientLight intensity={0.5} />
         <directionalLight position={[10, 10, 5]} intensity={1} color="#ffffff" />
         <directionalLight position={[-10, -10, -5]} intensity={0.5} color="#c49a6c" />
@@ -161,7 +156,7 @@ export default function ThreeScene({ children }) {
           </Scroll>
         </ScrollControls>
 
-        <Environment preset="city" />
+        <Environment preset="city" resolution={256} />
         <Preload all />
       </Canvas>
     </div>
