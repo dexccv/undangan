@@ -148,6 +148,17 @@ a {
   min-height: 100vh;
 }
 
+.lp-spacer-full {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lp-spacer-half {
+  height: 50vh;
+}
+
 .lp-hero-content {
   flex: 1;
   max-width: 600px;
@@ -285,6 +296,10 @@ a {
 .lp-features {
   padding: 100px 5%;
   background: transparent;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .lp-feature-grid {
@@ -333,6 +348,10 @@ a {
 .lp-pricing {
   padding: 100px 5%;
   background: transparent;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .lp-pricing-grid {
@@ -440,6 +459,10 @@ a {
   text-align: center;
   position: relative;
   overflow: hidden;
+  min-height: 50vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .lp-footer::before {

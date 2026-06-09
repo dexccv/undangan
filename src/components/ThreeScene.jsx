@@ -139,6 +139,18 @@ function CinematicExperience() {
 }
 
 export default function ThreeScene({ children }) {
+  const [pages, setPages] = React.useState(5);
+
+  React.useEffect(() => {
+    const handleResize = () => {
+      // Mobile screens need more pages because the stacked layout is much taller
+      setPages(window.innerWidth < 768 ? 9 : 5);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   return (
     <div style={{ width: '100vw', height: '100vh', overflow: 'hidden', position: 'fixed', top: 0, left: 0, zIndex: 0 }}>
       <Canvas camera={{ position: [0, 0, 5], fov: 60 }} dpr={[1, 1.5]} performance={{ min: 0.5 }}>
@@ -146,7 +158,7 @@ export default function ThreeScene({ children }) {
         <directionalLight position={[10, 10, 5]} intensity={1} color="#ffffff" />
         <directionalLight position={[-10, -10, -5]} intensity={0.5} color="#c49a6c" />
         
-        <ScrollControls pages={5} damping={0.2}>
+        <ScrollControls pages={pages} damping={0.2}>
           <CinematicExperience />
           
           <Scroll html style={{ width: '100vw', pointerEvents: 'none' }}>

@@ -18,12 +18,12 @@ export default function LandingPage() {
         </nav>
 
         {/* Space for Portal (Page 1) */}
-        <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="lp-spacer-full">
           <h1 className="lp-title" style={{ textAlign: 'center', opacity: 0.8 }}>Scroll to Enter</h1>
         </div>
 
         {/* Hero Section (Page 2) */}
-        <section className="lp-hero" style={{ height: '100vh' }}>
+        <section className="lp-hero">
           <div className="lp-hero-content">
             <h1 className="lp-title">Undangan Digital Premium & Elegan</h1>
             <p className="lp-subtitle">
@@ -37,10 +37,10 @@ export default function LandingPage() {
         </section>
 
         {/* Space for Tunnel (Page 3) */}
-        <div style={{ height: '50vh' }}></div>
+        <div className="lp-spacer-half"></div>
 
         {/* Features Section (Page 4) */}
-        <section id="features" className="lp-features" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+        <section id="features" className="lp-features">
           <h2 className="lp-section-title">Mengapa Memilih Kami?</h2>
           <div className="lp-feature-grid">
             <div className="lp-feature-card" style={{ transitionDelay: '100ms' }}>
@@ -67,7 +67,7 @@ export default function LandingPage() {
         </section>
 
         {/* Pricing Section (Page 5) */}
-        <section id="pricing" className="lp-pricing" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+        <section id="pricing" className="lp-pricing">
           <h2 className="lp-section-title">Pilih Paket Undangan Anda</h2>
           <div className="lp-pricing-grid">
             <div className="lp-price-card" style={{ transitionDelay: '100ms' }}>
@@ -123,7 +123,7 @@ export default function LandingPage() {
         </section>
 
         {/* Footer CTA */}
-        <footer id="contact" className="lp-footer" style={{ minHeight: '50vh', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+        <footer id="contact" className="lp-footer">
           <h2>Siap membagikan hari bahagia Anda?</h2>
           <p style={{ transitionDelay: '100ms' }}>Hubungi tim kami sekarang dan dapatkan penawaran spesial!</p>
           <div style={{ display: 'flex', justifyContent: 'center' }}>
