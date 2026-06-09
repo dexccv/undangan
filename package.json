@@ -14,8 +14,6 @@
     "@react-three/fiber": "^9.6.1",
     "canvas-confetti": "^1.9.4",
     "firebase": "^12.14.0",
-    "framer-motion": "^12.40.0",
-    "framer-motion-3d": "^12.4.13",
     "lucide-react": "^1.17.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
