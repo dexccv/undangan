@@ -10,7 +10,6 @@ function CinematicExperience() {
   // References to groups
   const portalRef = useRef();
   const tunnelRef = useRef();
-  const floatingScreenRef = useRef();
 
   // Generate tunnel planes
   const tunnelPlanes = useMemo(() => {
@@ -64,28 +63,7 @@ function CinematicExperience() {
       tunnelRef.current.rotation.z = offset * Math.PI;
     }
 
-    // 3. Floating Screen Logic (Offset 0.6 to 1.0)
-    if (floatingScreenRef.current) {
-      // Start far away and rotated, then land smoothly in center
-      // At offset < 0.6, it's far below and rotated
-      // At offset = 1.0, it's center and facing front
-      
-      let progress = 0;
-      if (offset > 0.6) {
-        progress = (offset - 0.6) * 2.5; // Scale 0 to 1
-        progress = Math.min(progress, 1);
-      }
-
-      // Ease out cubic
-      const ease = 1 - Math.pow(1 - progress, 3);
-
-      const targetZ = -5 + ease * 3;
-      const targetY = -10 + ease * 10;
-      const targetRotX = (Math.PI / 2) * (1 - ease); // starts flat, stands up
-
-      floatingScreenRef.current.position.set(0, targetY, targetZ);
-      floatingScreenRef.current.rotation.set(targetRotX, 0, 0);
-    }
+    // Floating Screen Logic removed
   });
 
   return (
@@ -122,18 +100,6 @@ function CinematicExperience() {
         ))}
       </group>
 
-      {/* Concept C: Floating Screen (Apple Style) */}
-      <group ref={floatingScreenRef} position={[0, -10, -10]}>
-        <mesh>
-          <boxGeometry args={[viewport.width * 0.8, viewport.height * 0.8, 0.1]} />
-          <meshStandardMaterial color="#fcfbfa" metalness={0.5} roughness={0.1} />
-        </mesh>
-        {/* Glow behind the screen */}
-        <mesh position={[0, 0, -0.2]}>
-          <planeGeometry args={[viewport.width * 0.85, viewport.height * 0.85]} />
-          <meshBasicMaterial color="#c49a6c" transparent opacity={0.3} />
-        </mesh>
-      </group>
     </>
   );
 }
