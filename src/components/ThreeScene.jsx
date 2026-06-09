@@ -106,15 +106,35 @@ function CinematicExperience() {
 
 export default function ThreeScene({ children }) {
   const [pages, setPages] = React.useState(5);
+  const containerRef = useRef();
 
   React.useEffect(() => {
-    const handleResize = () => {
-      // Mobile screens need more pages because the stacked layout is much taller
-      setPages(window.innerWidth < 768 ? 9 : 5);
+    if (!containerRef.current) return;
+
+    const updatePages = () => {
+      const height = containerRef.current.getBoundingClientRect().height;
+      const windowHeight = window.innerHeight;
+      // Calculate exact number of pages needed (can be a decimal)
+      // We add a tiny buffer (0.1) just to ensure the bottom isn't clipped
+      const calculatedPages = (height / windowHeight);
+      setPages(calculatedPages);
     };
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+
+    const observer = new ResizeObserver(() => {
+      updatePages();
+    });
+
+    observer.observe(containerRef.current);
+    // Also observe window resize as a fallback
+    window.addEventListener('resize', updatePages);
+    
+    // Initial calculation
+    setTimeout(updatePages, 100);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', updatePages);
+    };
   }, []);
 
   return (
@@ -124,11 +144,11 @@ export default function ThreeScene({ children }) {
         <directionalLight position={[10, 10, 5]} intensity={1} color="#ffffff" />
         <directionalLight position={[-10, -10, -5]} intensity={0.5} color="#c49a6c" />
         
-        <ScrollControls pages={pages} damping={0.2}>
+        <ScrollControls pages={Math.max(1, pages)} damping={0.2}>
           <CinematicExperience />
           
           <Scroll html style={{ width: '100%', pointerEvents: 'none' }}>
-            <div style={{ pointerEvents: 'auto' }}>
+            <div ref={containerRef} style={{ pointerEvents: 'auto' }}>
               {children}
             </div>
           </Scroll>
