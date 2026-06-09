@@ -112,11 +112,11 @@ export default function ThreeScene({ children }) {
     if (!containerRef.current) return;
 
     const updatePages = () => {
-      const height = containerRef.current.getBoundingClientRect().height;
+      const height = containerRef.current.scrollHeight;
       const windowHeight = window.innerHeight;
-      // Calculate exact number of pages needed (can be a decimal)
-      // We add a tiny buffer (0.1) just to ensure the bottom isn't clipped
-      const calculatedPages = (height / windowHeight);
+      // Calculate exact number of pages needed
+      // Add a small buffer (0.2 pages) to ensure bottom padding/margins aren't cut off
+      const calculatedPages = (height / windowHeight) + 0.2;
       setPages(calculatedPages);
     };
 
