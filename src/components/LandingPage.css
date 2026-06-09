@@ -22,7 +22,7 @@
 
 .lp-container {
   font-family: 'Plus Jakarta Sans', sans-serif;
-  background-color: var(--lp-bg);
+  background-color: transparent;
   color: var(--lp-text);
   min-height: 100vh;
   overflow-x: hidden;
@@ -284,7 +284,7 @@ a {
 
 .lp-features {
   padding: 100px 5%;
-  background: #fff;
+  background: transparent;
 }
 
 .lp-feature-grid {
@@ -297,6 +297,8 @@ a {
 
 .lp-feature-card {
   background: var(--lp-card-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   padding: 2.5rem 2rem;
   border-radius: var(--lp-radius);
   text-align: center;
@@ -330,7 +332,7 @@ a {
 /* Pricing Section */
 .lp-pricing {
   padding: 100px 5%;
-  background: var(--lp-bg);
+  background: transparent;
 }
 
 .lp-pricing-grid {
@@ -343,7 +345,9 @@ a {
 }
 
 .lp-price-card {
-  background: #fff;
+  background: var(--lp-card-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-radius: var(--lp-radius);
   padding: 3rem 2.5rem;
   box-shadow: var(--lp-shadow);

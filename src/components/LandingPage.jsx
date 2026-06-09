@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { Sparkles, Zap, Music, BookOpen, CheckCircle2, XCircle } from 'lucide-react';
+import ThreeScene from './ThreeScene';
 import './LandingPage.css';
 
 export default function LandingPage() {
@@ -20,6 +21,7 @@ export default function LandingPage() {
 
   return (
     <div className="lp-container">
+      <ThreeScene />
       {/* Navigation */}
       <nav className="lp-nav">
         <div className="lp-logo">Digitalisasi.id</div>
