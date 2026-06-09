@@ -264,11 +264,10 @@ a {
 .lp-section-title {
   text-align: center;
   font-size: 2.5rem;
-  margin-bottom: 3rem;
+  margin: 0 auto 3rem auto;
   position: relative;
-  display: inline-block;
-  left: 50%;
-  transform: translateX(-50%);
+  display: block;
+  width: fit-content;
 }
 
 .lp-section-title::after {
