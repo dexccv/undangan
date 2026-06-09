@@ -1,18 +1,20 @@
 import React, { useRef } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Environment, Float, Preload, ScrollControls, useScroll } from '@react-three/drei';
+import { Environment, Float, Preload } from '@react-three/drei';
 import * as THREE from 'three';
 
 // Procedurally generate floating gold rings
 function Rings() {
   const group = useRef();
-  const scroll = useScroll();
 
-  useFrame((state, delta) => {
-    if (group.current && scroll) {
-      // Rotate the group based on scroll offset
-      group.current.rotation.y = scroll.offset * Math.PI * 2;
-      group.current.position.y = -scroll.offset * 10;
+  useFrame(() => {
+    if (group.current) {
+      const scrollY = window.scrollY || 0;
+      // Convert scrollY to a reasonable offset (e.g., 0 to 1 based on page height)
+      const offset = scrollY / (document.body.scrollHeight - window.innerHeight || 1);
+      
+      group.current.rotation.y = offset * Math.PI * 2;
+      group.current.position.y = -offset * 10;
     }
   });
 
@@ -40,11 +42,12 @@ function Rings() {
 // Procedurally generate floating petals
 function Petals() {
   const group = useRef();
-  const scroll = useScroll();
 
-  useFrame((state, delta) => {
-    if (group.current && scroll) {
-      group.current.position.y = -scroll.offset * 5;
+  useFrame(() => {
+    if (group.current) {
+      const scrollY = window.scrollY || 0;
+      const offset = scrollY / (document.body.scrollHeight - window.innerHeight || 1);
+      group.current.position.y = -offset * 5;
     }
   });
 
@@ -58,9 +61,8 @@ function Petals() {
     petals.push(
       <Float key={`petal-${i}`} speed={2} rotationIntensity={5} floatIntensity={3}>
         <mesh position={position}>
-          {/* Simple petal shape using a sphere that is scaled */}
           <sphereGeometry args={[0.2, 16, 16]} />
-          <meshStandardMaterial color="#ffffff" transparent opacity={0.8} roughness={0.5} />
+          <meshStandardMaterial color="#c49a6c" transparent opacity={0.6} roughness={0.5} />
         </mesh>
       </Float>
     );
@@ -77,10 +79,8 @@ export default function ThreeScene() {
         <directionalLight position={[10, 10, 5]} intensity={1} color="#ffffff" />
         <directionalLight position={[-10, -10, -5]} intensity={0.5} color="#c49a6c" />
         
-        <ScrollControls pages={3} damping={0.1}>
-          <Rings />
-          <Petals />
-        </ScrollControls>
+        <Rings />
+        <Petals />
 
         <Environment preset="city" />
         <Preload all />
