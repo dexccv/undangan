@@ -74,6 +74,24 @@ export default function LandingPage() {
   const [orderNotes, setOrderNotes] = useState('');
   const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
 
+  // Rekomendasi Lokasi & Integrasi Peta Google Maps / OpenStreetMap
+  const [locationSuggestions, setLocationSuggestions] = useState([]);
+  const [isLoadingLocationSuggestions, setIsLoadingLocationSuggestions] = useState(false);
+  const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
+  const [orderLocationCoords, setOrderLocationCoords] = useState(null); // { lat, lon }
+  const [orderLocationMapsUrl, setOrderLocationMapsUrl] = useState('');
+
+  // Modal Peta Interaktif
+  const [isMapModalOpen, setIsMapModalOpen] = useState(false);
+  const [mapSearchQuery, setMapSearchQuery] = useState('');
+  const [mapPickedAddress, setMapPickedAddress] = useState('');
+  const [mapPickedCoords, setMapPickedCoords] = useState({ lat: -6.2088, lon: 106.8456 }); // Default Jabodetabek
+  const [isResolvingMapAddress, setIsResolvingMapAddress] = useState(false);
+  const mapContainerRef = React.useRef(null);
+  const leafletMapInstanceRef = React.useRef(null);
+  const leafletMarkerRef = React.useRef(null);
+  const locationTimerRef = React.useRef(null);
+
   // Navigasi Langkah Modal & Pembayaran QRIS
   const [orderStep, setOrderStep] = useState('form'); // 'form' | 'payment'
   const [receiptFile, setReceiptFile] = useState(null);
@@ -236,23 +254,286 @@ export default function LandingPage() {
     setOrderSlug(val.toLowerCase().replace(/[^a-z0-9-]/g, ''));
   };
 
+  // ==========================================
+  // LOGIKA PENCARIAN LOKASI (AUTOCOMPLETE ALA GOOGLE MAPS)
+  // ==========================================
+  const handleLocationInputChange = (val) => {
+    setOrderEventLocation(val);
+    setShowLocationSuggestions(true);
+
+    if (locationTimerRef.current) clearTimeout(locationTimerRef.current);
+
+    if (val.trim().length < 3) {
+      setLocationSuggestions([]);
+      setIsLoadingLocationSuggestions(false);
+      return;
+    }
+
+    setIsLoadingLocationSuggestions(true);
+    locationTimerRef.current = setTimeout(async () => {
+      try {
+        let results = [];
+        // Coba Photon Komoot (cepat & tanpa batasan CORS)
+        try {
+          const photonRes = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(val)}&limit=6&lang=en`);
+          const photonData = await photonRes.json();
+          if (photonData?.features?.length > 0) {
+            results = photonData.features.map((feat) => {
+              const p = feat.properties;
+              const [lon, lat] = feat.geometry.coordinates;
+              const addrParts = [p.name, p.street, p.district, p.city, p.state].filter(Boolean);
+              return {
+                id: `${lat}_${lon}`,
+                name: p.name || addrParts[0] || 'Tempat Acara',
+                address: addrParts.slice(1).join(', ') || p.city || p.country || 'Indonesia',
+                fullAddress: addrParts.join(', '),
+                lat,
+                lon
+              };
+            });
+          }
+        } catch (errP) {
+          console.warn('Photon error, trying Nominatim fallback:', errP);
+        }
+
+        // Fallback OpenStreetMap Nominatim
+        if (results.length === 0) {
+          const osmRes = await fetch(
+            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(val)}&countrycodes=id&limit=5&addressdetails=1`
+          );
+          const osmData = await osmRes.json();
+          if (Array.isArray(osmData) && osmData.length > 0) {
+            results = osmData.map((item) => ({
+              id: item.place_id,
+              name: item.name || item.display_name.split(',')[0],
+              address: item.display_name,
+              fullAddress: item.display_name,
+              lat: parseFloat(item.lat),
+              lon: parseFloat(item.lon)
+            }));
+          }
+        }
+
+        setLocationSuggestions(results);
+      } catch (err) {
+        console.warn('Location suggestion search error:', err);
+      } finally {
+        setIsLoadingLocationSuggestions(false);
+      }
+    }, 320);
+  };
+
+  const handleSelectLocation = (item) => {
+    const pickedLoc = item.fullAddress || item.address || item.name;
+    setOrderEventLocation(pickedLoc);
+    setOrderLocationCoords({ lat: item.lat, lon: item.lon });
+    setOrderLocationMapsUrl(`https://www.google.com/maps/search/?api=1&query=${item.lat},${item.lon}`);
+    setShowLocationSuggestions(false);
+    setLocationSuggestions([]);
+  };
+
+  // ==========================================
+  // LOGIKA MODAL PETA INTERAKTIF (LEAFLET / OPENSTREETMAP)
+  // ==========================================
+  const loadLeafletAssets = () => {
+    return new Promise((resolve) => {
+      if (window.L) {
+        resolve(window.L);
+        return;
+      }
+      if (!document.getElementById('leaflet-css')) {
+        const link = document.createElement('link');
+        link.id = 'leaflet-css';
+        link.rel = 'stylesheet';
+        link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+        document.head.appendChild(link);
+      }
+      if (!document.getElementById('leaflet-js')) {
+        const script = document.createElement('script');
+        script.id = 'leaflet-js';
+        script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+        script.onload = () => resolve(window.L);
+        document.body.appendChild(script);
+      } else {
+        const poll = setInterval(() => {
+          if (window.L) {
+            clearInterval(poll);
+            resolve(window.L);
+          }
+        }, 50);
+      }
+    });
+  };
+
+  const reverseGeocodeCoords = async (lat, lon) => {
+    setIsResolvingMapAddress(true);
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`);
+      const data = await res.json();
+      if (data?.display_name) {
+        setMapPickedAddress(data.display_name);
+      } else {
+        setMapPickedAddress(`Titik Lokasi: ${lat.toFixed(5)}, ${lon.toFixed(5)}`);
+      }
+    } catch (e) {
+      setMapPickedAddress(`Titik Lokasi: ${lat.toFixed(5)}, ${lon.toFixed(5)}`);
+    } finally {
+      setIsResolvingMapAddress(false);
+    }
+  };
+
+  const handleOpenMapModal = async () => {
+    setIsMapModalOpen(true);
+    const initialQuery = orderEventLocation || '';
+    setMapSearchQuery(initialQuery);
+    setMapPickedAddress(initialQuery);
+
+    const coords = orderLocationCoords || { lat: -6.2088, lon: 106.8456 }; // Default Jakarta
+    setMapPickedCoords(coords);
+
+    const L = await loadLeafletAssets();
+    setTimeout(() => {
+      if (!mapContainerRef.current) return;
+      if (leafletMapInstanceRef.current) {
+        leafletMapInstanceRef.current.remove();
+        leafletMapInstanceRef.current = null;
+      }
+
+      const map = L.map(mapContainerRef.current).setView([coords.lat, coords.lon], 15);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(map);
+
+      const marker = L.marker([coords.lat, coords.lon], { draggable: true }).addTo(map);
+      leafletMapInstanceRef.current = map;
+      leafletMarkerRef.current = marker;
+
+      map.invalidateSize();
+
+      if (!orderEventLocation) {
+        reverseGeocodeCoords(coords.lat, coords.lon);
+      }
+
+      map.on('click', (e) => {
+        marker.setLatLng(e.latlng);
+        setMapPickedCoords({ lat: e.latlng.lat, lon: e.latlng.lng });
+        reverseGeocodeCoords(e.latlng.lat, e.latlng.lng);
+      });
+
+      marker.on('dragend', () => {
+        const pos = marker.getLatLng();
+        setMapPickedCoords({ lat: pos.lat, lon: pos.lng });
+        reverseGeocodeCoords(pos.lat, pos.lng);
+      });
+    }, 150);
+  };
+
+  const handleSearchOnMap = async (queryText) => {
+    if (!queryText.trim()) return;
+    setIsResolvingMapAddress(true);
+    try {
+      let foundLat = null;
+      let foundLon = null;
+      let foundName = '';
+
+      try {
+        const pRes = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(queryText)}&limit=1`);
+        const pData = await pRes.json();
+        if (pData?.features?.length > 0) {
+          const feat = pData.features[0];
+          [foundLon, foundLat] = feat.geometry.coordinates;
+          foundName = [feat.properties.name, feat.properties.street, feat.properties.city, feat.properties.state].filter(Boolean).join(', ');
+        }
+      } catch (err) {}
+
+      if (!foundLat) {
+        const osmRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryText)}&countrycodes=id&limit=1&addressdetails=1`);
+        const osmData = await osmRes.json();
+        if (Array.isArray(osmData) && osmData.length > 0) {
+          foundLat = parseFloat(osmData[0].lat);
+          foundLon = parseFloat(osmData[0].lon);
+          foundName = osmData[0].display_name;
+        }
+      }
+
+      if (foundLat && foundLon) {
+        setMapPickedCoords({ lat: foundLat, lon: foundLon });
+        setMapPickedAddress(foundName);
+        if (leafletMapInstanceRef.current && leafletMarkerRef.current) {
+          leafletMapInstanceRef.current.setView([foundLat, foundLon], 16);
+          leafletMarkerRef.current.setLatLng([foundLat, foundLon]);
+        }
+      } else {
+        Swal.fire({
+          title: 'Lokasi Tidak Ditemukan',
+          text: 'Silakan coba kata kunci lain atau klik langsung pada peta.',
+          icon: 'info',
+          confirmButtonColor: '#B8860B'
+        });
+      }
+    } catch (e) {
+      console.warn('Map search error:', e);
+    } finally {
+      setIsResolvingMapAddress(false);
+    }
+  };
+
+  const handleConfirmPickedMapLocation = () => {
+    const chosenAddress = mapPickedAddress.trim() || `Titik Lokasi (${mapPickedCoords.lat.toFixed(5)}, ${mapPickedCoords.lon.toFixed(5)})`;
+    setOrderEventLocation(chosenAddress);
+    setOrderLocationCoords(mapPickedCoords);
+    setOrderLocationMapsUrl(`https://www.google.com/maps/search/?api=1&query=${mapPickedCoords.lat},${mapPickedCoords.lon}`);
+    setIsMapModalOpen(false);
+    setShowLocationSuggestions(false);
+  };
+
+  // ==========================================
+  // SUBMIT FORMULIR PEMESANAN (VALIDASI KETAT WAJIB)
+  // ==========================================
   const handleProceedToPayment = async (e) => {
     e.preventDefault();
     const finalWanita = orderWanitaPanggilan.trim();
     const finalPria = orderPriaPanggilan.trim();
+    const finalWanitaLengkap = orderWanitaLengkap.trim();
+    const finalPriaLengkap = orderPriaLengkap.trim();
     const finalPhone = orderPhone.trim();
+    const finalDate = orderEventDate;
+    const finalLocation = orderEventLocation.trim();
     const finalSlug = (orderSlug.trim() || `${finalWanita}-${finalPria}`).toLowerCase().replace(/[^a-z0-9-]+/g, '-');
 
+    // 1. Validasi Nama Panggilan (WAJIB)
     if (!finalWanita || !finalPria) {
       Swal.fire({
-        title: 'Lengkapi Nama Mempelai',
-        text: 'Mohon masukkan nama panggilan mempelai wanita dan mempelai pria.',
+        title: 'Nama Panggilan Diperlukan',
+        text: 'Mohon masukkan nama panggilan untuk mempelai wanita dan mempelai pria.',
         icon: 'warning',
         confirmButtonColor: '#B8860B'
       });
       return;
     }
 
+    // 2. Validasi Nama Lengkap & Gelar (WAJIB - Tidak Boleh Kosong)
+    if (!finalWanitaLengkap) {
+      Swal.fire({
+        title: 'Nama Lengkap Wanita Diperlukan',
+        text: 'Mohon masukkan nama lengkap dan gelar mempelai wanita.',
+        icon: 'warning',
+        confirmButtonColor: '#B8860B'
+      });
+      return;
+    }
+
+    if (!finalPriaLengkap) {
+      Swal.fire({
+        title: 'Nama Lengkap Pria Diperlukan',
+        text: 'Mohon masukkan nama lengkap dan gelar mempelai pria.',
+        icon: 'warning',
+        confirmButtonColor: '#B8860B'
+      });
+      return;
+    }
+
+    // 3. Validasi Nomor WhatsApp (WAJIB)
     if (!finalPhone) {
       Swal.fire({
         title: 'Nomor WhatsApp Diperlukan',
@@ -263,9 +544,35 @@ export default function LandingPage() {
       return;
     }
 
+    // 4. Validasi Tanggal Acara (WAJIB - Tidak Boleh Kosong)
+    if (!finalDate) {
+      Swal.fire({
+        title: 'Tanggal Acara Diperlukan',
+        text: 'Mohon tentukan tanggal acara pernikahan agar hitung mundur dan jadwal undangan dapat ditampilkan.',
+        icon: 'warning',
+        confirmButtonColor: '#B8860B'
+      });
+      return;
+    }
+
+    // 5. Validasi Lokasi Acara (WAJIB - Tidak Boleh Kosong)
+    if (!finalLocation) {
+      Swal.fire({
+        title: 'Lokasi Acara Diperlukan',
+        text: 'Tempat / lokasi acara pernikahan wajib diisi atau dipilih melalui peta.',
+        icon: 'warning',
+        confirmButtonColor: '#B8860B'
+      });
+      return;
+    }
+
     setIsSubmittingOrder(true);
     const orderId = 'ord-' + Date.now();
     setCreatedOrderId(orderId);
+
+    const generatedMapsUrl = orderLocationMapsUrl || (orderLocationCoords 
+      ? `https://www.google.com/maps/search/?api=1&query=${orderLocationCoords.lat},${orderLocationCoords.lon}` 
+      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(finalLocation)}`);
 
     const newOrder = {
       id: orderId,
@@ -277,13 +584,13 @@ export default function LandingPage() {
 
       // Mempelai Wanita
       wanita_panggilan: finalWanita,
-      wanita_lengkap: orderWanitaLengkap.trim(),
+      wanita_lengkap: finalWanitaLengkap,
       wanita_ortu: orderWanitaOrtu.trim(),
       wanita_ig: orderWanitaIg.trim(),
 
       // Mempelai Pria
       pria_panggilan: finalPria,
-      pria_lengkap: orderPriaLengkap.trim(),
+      pria_lengkap: finalPriaLengkap,
       pria_ortu: orderPriaOrtu.trim(),
       pria_ig: orderPriaIg.trim(),
 
@@ -291,8 +598,10 @@ export default function LandingPage() {
       song_title: orderSongTitle.trim(),
 
       // Acara, Doa & Catatan
-      event_date: orderEventDate || '',
-      event_location: orderEventLocation.trim(),
+      event_date: finalDate,
+      event_location: finalLocation,
+      event_location_maps_url: generatedMapsUrl,
+      location_coords: orderLocationCoords || null,
       kutipan_doa: orderKutipanDoa.trim(),
       notes: orderNotes.trim(),
 
@@ -476,17 +785,18 @@ export default function LandingPage() {
       `*Nama Tautan Undangan:* domainanda.com/?id=${finalSlug}`,
       `*Nomor WhatsApp:* ${finalPhone}`,
       ``,
-      `*Mempelai Wanita:* ${finalWanita}${orderWanitaLengkap.trim() ? ` (${orderWanitaLengkap.trim()})` : ''}`,
+      `*Mempelai Wanita:* ${finalWanita} (${orderWanitaLengkap.trim()})`,
       orderWanitaOrtu.trim() ? `*Orang Tua Wanita:* ${orderWanitaOrtu.trim()}` : null,
       orderWanitaIg.trim() ? `*Instagram Wanita:* ${orderWanitaIg.trim()}` : null,
       ``,
-      `*Mempelai Pria:* ${finalPria}${orderPriaLengkap.trim() ? ` (${orderPriaLengkap.trim()})` : ''}`,
+      `*Mempelai Pria:* ${finalPria} (${orderPriaLengkap.trim()})`,
       orderPriaOrtu.trim() ? `*Orang Tua Pria:* ${orderPriaOrtu.trim()}` : null,
       orderPriaIg.trim() ? `*Instagram Pria:* ${orderPriaIg.trim()}` : null,
       ``,
       orderSongTitle.trim() ? `*Lagu Pilihan:* ${orderSongTitle.trim()}` : null,
-      orderEventDate ? `*Tanggal Acara:* ${orderEventDate}` : null,
-      orderEventLocation.trim() ? `*Lokasi Acara:* ${orderEventLocation.trim()}` : null,
+      `*Tanggal Acara:* ${orderEventDate}`,
+      `*Lokasi Acara:* ${orderEventLocation.trim()}`,
+      orderLocationMapsUrl ? `*Peta Lokasi:* ${orderLocationMapsUrl}` : null,
       orderNotes.trim() ? `*Catatan Tambahan:* ${orderNotes.trim()}` : null,
       ``,
       `*Status Pembayaran:* Telah melakukan transfer QRIS`,
@@ -1006,12 +1316,12 @@ export default function LandingPage() {
 
                     <div className="lp-order-form-group">
                       <label htmlFor="order-wanita-lengkap">
-                        <span>Nama Lengkap &amp; Gelar Mempelai Wanita</span>
-                        <span className="lp-label-optional">(Opsional)</span>
+                        <span>Nama Lengkap &amp; Gelar Mempelai Wanita *</span>
                       </label>
                       <input
                         id="order-wanita-lengkap"
                         type="text"
+                        required
                         placeholder="Contoh: Dimas Salsabila, S.Kom"
                         value={orderWanitaLengkap}
                         onChange={(e) => setOrderWanitaLengkap(e.target.value)}
@@ -1071,12 +1381,12 @@ export default function LandingPage() {
 
                     <div className="lp-order-form-group">
                       <label htmlFor="order-pria-lengkap">
-                        <span>Nama Lengkap &amp; Gelar Mempelai Pria</span>
-                        <span className="lp-label-optional">(Opsional)</span>
+                        <span>Nama Lengkap &amp; Gelar Mempelai Pria *</span>
                       </label>
                       <input
                         id="order-pria-lengkap"
                         type="text"
+                        required
                         placeholder="Contoh: Anisa Pratama, S.T"
                         value={orderPriaLengkap}
                         onChange={(e) => setOrderPriaLengkap(e.target.value)}
@@ -1172,12 +1482,12 @@ export default function LandingPage() {
 
                     <div className="lp-order-form-group">
                       <label htmlFor="order-event-date">
-                        <span>Perkiraan Tanggal Acara</span>
-                        <span className="lp-label-optional">(Opsional)</span>
+                        <span>Tanggal Acara Pernikahan *</span>
                       </label>
                       <input
                         id="order-event-date"
                         type="date"
+                        required
                         value={orderEventDate}
                         onChange={(e) => setOrderEventDate(e.target.value)}
                         className="lp-order-input"
@@ -1185,36 +1495,109 @@ export default function LandingPage() {
                     </div>
                   </div>
 
-                  <div className="lp-order-grid-2">
-                    <div className="lp-order-form-group">
+                  {/* Tempat / Lokasi Acara dengan Autocomplete & Maps Picker */}
+                  <div className="lp-order-form-group full-width lp-location-field-wrapper">
+                    <div className="lp-location-header-row">
                       <label htmlFor="order-location">
-                        <span>Tempat / Lokasi Acara</span>
-                        <span className="lp-label-optional">(Opsional)</span>
+                        <span>Tempat / Lokasi Acara Pernikahan *</span>
                       </label>
-                      <input
-                        id="order-location"
-                        type="text"
-                        placeholder="Contoh: Masjid Agung Al-Barkah / Grand Ballroom"
-                        value={orderEventLocation}
-                        onChange={(e) => setOrderEventLocation(e.target.value)}
-                        className="lp-order-input"
-                      />
+                      <button
+                        type="button"
+                        onClick={handleOpenMapModal}
+                        className="lp-btn-pick-map-inline"
+                        title="Buka peta interaktif untuk menentukan titik koordinat presisi"
+                      >
+                        <MapPin size={15} weight="bold" />
+                        <span>Pilih Melalui Maps</span>
+                      </button>
                     </div>
 
-                    <div className="lp-order-form-group">
-                      <label htmlFor="order-notes">
-                        <span>Catatan Tambahan / Konsep Acara</span>
-                        <span className="lp-label-optional">(Opsional)</span>
-                      </label>
-                      <input
-                        id="order-notes"
-                        type="text"
-                        placeholder="Contoh: Konsep sage green modern, nuansa adat..."
-                        value={orderNotes}
-                        onChange={(e) => setOrderNotes(e.target.value)}
-                        className="lp-order-input"
-                      />
+                    <div className="lp-location-input-container">
+                      <div className="lp-location-input-box">
+                        <MapPin size={18} weight="duotone" className="lp-location-input-icon" />
+                        <input
+                          id="order-location"
+                          type="text"
+                          required
+                          autoComplete="off"
+                          placeholder="Ketik nama gedung, masjid, hotel, atau alamat acara..."
+                          value={orderEventLocation}
+                          onChange={(e) => handleLocationInputChange(e.target.value)}
+                          onFocus={() => {
+                            if (locationSuggestions.length > 0) setShowLocationSuggestions(true);
+                          }}
+                          className="lp-order-input lp-order-input-with-icon"
+                        />
+                        {isLoadingLocationSuggestions && (
+                          <div className="lp-location-spinner" title="Mencari rekomendasi lokasi..." />
+                        )}
+                      </div>
+
+                      {/* Dropdown Rekomendasi Lokasi ala Google Maps */}
+                      {showLocationSuggestions && locationSuggestions.length > 0 && (
+                        <div className="lp-location-suggestions-dropdown">
+                          <div className="lp-suggestions-header">
+                            <span>Saran Lokasi Terverifikasi:</span>
+                            <button
+                              type="button"
+                              onClick={() => setShowLocationSuggestions(false)}
+                              className="lp-btn-close-suggestions"
+                            >
+                              Tutup
+                            </button>
+                          </div>
+                          {locationSuggestions.map((item) => (
+                            <button
+                              key={item.id}
+                              type="button"
+                              className="lp-suggestion-item"
+                              onClick={() => handleSelectLocation(item)}
+                            >
+                              <div className="lp-suggestion-icon-wrap">
+                                <MapPin size={16} weight="fill" />
+                              </div>
+                              <div className="lp-suggestion-text-wrap">
+                                <strong className="lp-suggestion-title">{item.name}</strong>
+                                <small className="lp-suggestion-addr">{item.address}</small>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
+
+                    {/* Badge saat lokasi terhubung dengan peta */}
+                    {orderLocationCoords && (
+                      <div className="lp-location-verified-badge">
+                        <CheckCircle size={14} weight="bold" />
+                        <span>Titik Peta Presisi ({orderLocationCoords.lat.toFixed(4)}, {orderLocationCoords.lon.toFixed(4)})</span>
+                        {orderLocationMapsUrl && (
+                          <a
+                            href={orderLocationMapsUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="lp-link-view-gmaps"
+                          >
+                            Buka di Google Maps
+                          </a>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="lp-order-form-group full-width">
+                    <label htmlFor="order-notes">
+                      <span>Catatan Tambahan / Konsep Acara</span>
+                      <span className="lp-label-optional">(Opsional)</span>
+                    </label>
+                    <input
+                      id="order-notes"
+                      type="text"
+                      placeholder="Contoh: Konsep sage green modern, nuansa adat..."
+                      value={orderNotes}
+                      onChange={(e) => setOrderNotes(e.target.value)}
+                      className="lp-order-input"
+                    />
                   </div>
 
                   <div className="lp-order-modal-actions">
@@ -1334,6 +1717,90 @@ export default function LandingPage() {
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* MODAL PICKER PETA INTERAKTIF (GOOGLE MAPS / OPENSTREETMAP STYLE) */}
+        {isMapModalOpen && (
+          <div className="lp-order-modal-backdrop lp-map-modal-backdrop" onClick={() => setIsMapModalOpen(false)}>
+            <div className="lp-order-modal-dialog lp-map-modal-dialog" onClick={(e) => e.stopPropagation()}>
+              <div className="lp-order-modal-header">
+                <div>
+                  <h3 className="lp-order-modal-title">Pilih Titik Lokasi Acara di Peta</h3>
+                  <p className="lp-order-modal-subtitle">Geser pin marker atau klik di mana saja pada peta untuk menentukan lokasi yang presisi</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsMapModalOpen(false)}
+                  className="lp-order-modal-close"
+                  aria-label="Tutup Peta"
+                >
+                  <X size={20} weight="bold" />
+                </button>
+              </div>
+
+              <div className="lp-map-modal-body">
+                {/* Search Bar di dalam Peta */}
+                <div className="lp-map-search-bar">
+                  <input
+                    type="text"
+                    placeholder="Ketik nama gedung, masjid, hotel, atau jalan lalu tekan Cari..."
+                    value={mapSearchQuery}
+                    onChange={(e) => setMapSearchQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleSearchOnMap(mapSearchQuery);
+                      }
+                    }}
+                    className="lp-map-search-input"
+                  />
+                  <button
+                    type="button"
+                    className="lp-btn lp-btn-proceed"
+                    onClick={() => handleSearchOnMap(mapSearchQuery)}
+                    style={{ padding: '0.65rem 1.25rem', fontSize: '0.85rem', flexShrink: 0 }}
+                  >
+                    <span>Cari di Peta</span>
+                  </button>
+                </div>
+
+                {/* Kontainer Peta Leaflet */}
+                <div id="interactive-map-container" ref={mapContainerRef} className="lp-leaflet-map-frame" />
+
+                {/* Bar Alamat Terpilih */}
+                <div className="lp-map-resolved-box">
+                  <div className="lp-map-resolved-header">
+                    <MapPin size={16} weight="fill" style={{ color: 'var(--lp-gold-hover)' }} />
+                    <span>Alamat Titik Terpilih:</span>
+                  </div>
+                  <p className="lp-map-resolved-text">
+                    {isResolvingMapAddress ? 'Sedang membaca nama tempat dari titik koordinat...' : (mapPickedAddress || 'Klik pada peta atau geser pin marker untuk memilih alamat.')}
+                  </p>
+                  <small className="lp-map-resolved-coords">
+                    Koordinat: {mapPickedCoords.lat.toFixed(5)}, {mapPickedCoords.lon.toFixed(5)}
+                  </small>
+                </div>
+              </div>
+
+              <div className="lp-order-modal-actions">
+                <button
+                  type="button"
+                  className="lp-btn lp-btn-cancel"
+                  onClick={() => setIsMapModalOpen(false)}
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  className="lp-btn lp-btn-proceed"
+                  onClick={handleConfirmPickedMapLocation}
+                >
+                  <Check size={18} weight="bold" />
+                  <span>Gunakan Lokasi Ini</span>
+                </button>
+              </div>
             </div>
           </div>
         )}
