@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Agent & IDE customizations
+.agents/
+implementation_plan.md

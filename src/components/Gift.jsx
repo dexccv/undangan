@@ -1,62 +1,131 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { Gift as GiftIcon, Copy, Check, CreditCard, Sparkle, Package } from '@phosphor-icons/react';
+import { useToast } from '../context/ToastContext';
+import ScrollReveal from './ui/ScrollReveal';
 
 export default function Gift({ data }) {
-  const handleCopy = async (text, e) => {
+  const { showToast } = useToast();
+  const [copiedIndex, setCopiedIndex] = useState(null);
+
+  const handleCopy = async (text, label, idx) => {
+    if (!text) return;
     try {
       await navigator.clipboard.writeText(text);
-    } catch (err) {
+      setCopiedIndex(idx);
+      showToast(`Nomor rekening ${label} berhasil disalin!`);
+      setTimeout(() => setCopiedIndex(null), 2500);
+    } catch {
+      // Fallback
       const ta = document.createElement('textarea');
       ta.value = text;
-      ta.style.cssText = 'position:fixed;opacity:0';
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
       document.body.appendChild(ta);
       ta.select();
       document.execCommand('copy');
       document.body.removeChild(ta);
+      setCopiedIndex(idx);
+      showToast(`Nomor rekening ${label} berhasil disalin!`);
+      setTimeout(() => setCopiedIndex(null), 2500);
     }
-    const btn = e.currentTarget;
-    const original = btn.innerHTML;
-    btn.classList.add('copied');
-    btn.innerHTML = '<i class="fa-solid fa-check"></i> Tersalin!';
-    setTimeout(() => {
-      btn.classList.remove('copied');
-      btn.innerHTML = original;
-    }, 2000);
   };
 
+  const accounts = [
+    {
+      bank: data?.bank_wanita || 'Bank BCA',
+      number: data?.rekening_wanita || '1234567890',
+      holder: data?.an_wanita || data?.wanita_lengkap || 'Nadia Salsabila',
+      role: 'Mempelai Wanita'
+    },
+    {
+      bank: data?.bank_pria || 'Bank BCA',
+      number: data?.rekening_pria || '0987654321',
+      holder: data?.an_pria || data?.pria_lengkap || 'Agus Pratama',
+      role: 'Mempelai Pria'
+    }
+  ].filter(acc => Boolean(acc.number));
+
   return (
-    <section id="gift" className="section">
-      <div className="container">
-        <h2 className="section-title reveal">Hadiah Digital</h2>
-        <span className="section-subtitle reveal">Tanda Kasih</span>
-        <div className="divider reveal"><i className="fa-solid fa-gift" aria-hidden="true"></i></div>
-
-        <p className="gift-intro reveal">
-          "Doa restu dari Bapak/Ibu/Saudara adalah yang paling utama bagi kami. Namun jika Anda ingin memberikan tanda kasih, kami menerima melalui transfer berikut."
-        </p>
-
-        <div className="gift-cards">
-          {/* Rekening Wanita */}
-          <div className="gift-card reveal-left">
-            <div className="gift-bank-logo bca" aria-hidden="true">BCA</div>
-            <h3>Bank BCA</h3>
-            <p className="account-name">a.n. <span>{data?.wanita_lengkap}</span></p>
-            <div className="account-number"><span>{data?.rekening_wanita}</span></div>
-            <button className="btn-copy" onClick={(e) => handleCopy(data?.rekening_wanita, e)}>
-              <i className="fa-regular fa-copy"></i> Salin Nomor
-            </button>
+    <section id="gift" className="section-padding gift-section">
+      <div className="section-container">
+        <ScrollReveal direction="up">
+          <div className="section-header text-center">
+            <span className="section-pill">
+              <GiftIcon size={14} weight="fill" />
+              <span>TANDA KASIH</span>
+            </span>
+            <h2 className="section-title">Amplop &amp; Hadiah Digital</h2>
+            <p className="section-description">
+              Doa restu Anda adalah karunia yang terindah. Bagi keluarga dan sahabat yang ingin memberikan tanda kasih secara digital, dapat disalurkan melalui:
+            </p>
           </div>
+        </ScrollReveal>
 
-          {/* Rekening Pria */}
-          <div className="gift-card reveal-right">
-            <div className="gift-bank-logo bca" aria-hidden="true">BCA</div>
-            <h3>Bank BCA</h3>
-            <p className="account-name">a.n. <span>{data?.pria_lengkap}</span></p>
-            <div className="account-number"><span>{data?.rekening_pria}</span></div>
-            <button className="btn-copy" onClick={(e) => handleCopy(data?.rekening_pria, e)}>
-              <i className="fa-regular fa-copy"></i> Salin Nomor
-            </button>
-          </div>
+        <div className="gift-cards-grid">
+          {accounts.map((acc, idx) => (
+            <ScrollReveal
+              key={idx}
+              direction={idx % 2 === 0 ? 'left' : 'right'}
+              delay={0.15 * (idx + 1)}
+              className="gift-card-col"
+            >
+              <div className="digital-bank-card">
+                <div className="bank-card-chip" aria-hidden="true">
+                  <div className="chip-lines"></div>
+                </div>
+
+                <div className="bank-card-header">
+                  <span className="bank-card-type">{acc.bank}</span>
+                  <span className="bank-card-role">{acc.role}</span>
+                </div>
+
+                <div className="bank-card-number-box">
+                  <span className="bank-card-number">{acc.number}</span>
+                </div>
+
+                <div className="bank-card-footer">
+                  <div className="bank-card-holder">
+                    <span className="holder-label">Atas Nama:</span>
+                    <span className="holder-name">{acc.holder}</span>
+                  </div>
+
+                  <button
+                    type="button"
+                    className={`btn-copy-account ${copiedIndex === idx ? 'copied' : ''}`}
+                    onClick={() => handleCopy(acc.number, acc.bank, idx)}
+                    aria-label={`Salin nomor rekening ${acc.bank}`}
+                  >
+                    {copiedIndex === idx ? (
+                      <>
+                        <Check size={18} weight="bold" />
+                        <span>Tersalin!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy size={18} weight="bold" />
+                        <span>Salin No. Rekening</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </ScrollReveal>
+          ))}
         </div>
+
+        {/* Physical Gift Address (Optional) */}
+        {data?.alamat_kado && (
+          <ScrollReveal direction="up" delay={0.3}>
+            <div className="gift-address-card">
+              <Package size={28} weight="duotone" className="gift-address-icon" />
+              <div className="gift-address-info">
+                <h4>Kirim Kado Fisik</h4>
+                <p>{data.alamat_kado}</p>
+                {data?.penerima_kado && <p className="gift-recipient">Penerima: <strong>{data.penerima_kado}</strong></p>}
+              </div>
+            </div>
+          </ScrollReveal>
+        )}
       </div>
     </section>
   );

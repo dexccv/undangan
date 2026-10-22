@@ -1,57 +1,88 @@
 import React from 'react';
-import confetti from 'canvas-confetti';
+import { CaretDown, Heart, CalendarBlank, MapPin } from '@phosphor-icons/react';
+import { motion } from 'motion/react';
 
 export default function Cover({ data }) {
-  const handleOpen = () => {
-    // trigger confetti
-    confetti({
-      particleCount: 150,
-      spread: 80,
-      origin: { y: 0.6 },
-      colors: ['#D4AF37', '#CBD5C0', '#F7F9F5']
-    });
+  const coverPhoto = data?.foto_cover || '/assets/foto1.jpg';
 
-    // scroll to quotes
+  const scrollToNext = () => {
     const target = document.getElementById('quotes');
     if (target) {
       target.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
-    
-    // Attempt to play audio
-    const audio = document.getElementById('bgm');
-    if (audio) {
-      audio.play().catch(e => console.log('Audio autoplay prevented'));
-      const btnPlay = document.getElementById('btn-play');
-      if (btnPlay) {
-        btnPlay.classList.add('playing');
-        btnPlay.innerHTML = '<i class="fa-solid fa-compact-disc fa-spin"></i>';
-      }
-    }
   };
 
   return (
-    <section id="cover">
-      <span className="cover-ornament top-left" aria-hidden="true"><i className="fa-solid fa-leaf"></i></span>
-      <span className="cover-ornament top-right" aria-hidden="true"><i className="fa-solid fa-leaf"></i></span>
-      <span className="cover-ornament bot-left" aria-hidden="true"><i className="fa-solid fa-heart"></i></span>
-      <span className="cover-ornament bot-right" aria-hidden="true"><i className="fa-solid fa-heart"></i></span>
-
-      <div className="cover-content">
-        <span className="cover-wedding-of reveal">The Wedding Of</span>
-        <h1 className="cover-names reveal">
-          <span>{data?.wanita_panggilan}</span> &amp; <span>{data?.pria_panggilan}</span>
-        </h1>
-        <p className="cover-date reveal"><span>{data?.tanggal_cover}</span></p>
-        
-        <button className="btn-open reveal" id="btn-open-invitation" onClick={handleOpen}>
-          <i className="fa-solid fa-envelope-open-text" aria-hidden="true"></i> Buka Undangan
-        </button>
+    <header id="cover" className="hero-cover">
+      <div 
+        className="hero-backdrop" 
+        style={{ backgroundImage: `url(${coverPhoto})` }}
+        role="img"
+        aria-label={`Foto pernikahan ${data?.wanita_panggilan || 'Mempelai Wanita'} dan ${data?.pria_panggilan || 'Mempelai Pria'}`}
+      >
+        <div className="hero-gradient-overlay"></div>
       </div>
 
-      <div className="cover-greeting-box">
-        <p>Kepada, Yth :</p>
-        <span id="guest-name">Tamu Undangan</span>
+      <div className="hero-content">
+        <motion.div 
+          className="hero-badge"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+        >
+          <span className="hero-badge-line"></span>
+          <span className="hero-badge-text">THE WEDDING OF</span>
+          <span className="hero-badge-line"></span>
+        </motion.div>
+
+        <motion.h1 
+          className="hero-names"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 1, delay: 0.4 }}
+        >
+          <span className="hero-name-wanita">{data?.wanita_panggilan || 'Nadia'}</span>
+          <span className="hero-amp">&amp;</span>
+          <span className="hero-name-pria">{data?.pria_panggilan || 'Agus'}</span>
+        </motion.h1>
+
+        <motion.div 
+          className="hero-meta"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.6 }}
+        >
+          {data?.tanggal_cover && (
+            <div className="hero-meta-item">
+              <CalendarBlank size={18} weight="duotone" className="hero-icon" />
+              <span>{data.tanggal_cover}</span>
+            </div>
+          )}
+          {data?.resepsi_lokasi && (
+            <div className="hero-meta-item">
+              <MapPin size={18} weight="duotone" className="hero-icon" />
+              <span>{data.resepsi_lokasi}</span>
+            </div>
+          )}
+        </motion.div>
+
+        <motion.button 
+          type="button"
+          className="hero-scroll-btn" 
+          onClick={scrollToNext}
+          aria-label="Gulir ke konten undangan"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.8 }}
+        >
+          <span className="scroll-btn-text">Buka Cerita Kami</span>
+          <CaretDown size={20} weight="bold" className="scroll-arrow-icon" />
+        </motion.button>
       </div>
-    </section>
+
+      {/* Decorative floral or corner accents */}
+      <div className="hero-corner hero-corner-tl" aria-hidden="true"></div>
+      <div className="hero-corner hero-corner-tr" aria-hidden="true"></div>
+    </header>
   );
 }
