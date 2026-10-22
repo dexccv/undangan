@@ -255,8 +255,13 @@ export default function LandingPage() {
   };
 
   // ==========================================
-  // LOGIKA PENCARIAN LOKASI (AUTOCOMPLETE ALA GOOGLE MAPS)
+  // LOGIKA PENCARIAN LOKASI (KHUSUS NEGARA INDONESIA)
   // ==========================================
+  const isLocationInIndonesia = (lat, lon) => {
+    // Batas koordinat geografis wilayah kepulauan Indonesia (Sabang sampai Merauke)
+    return lat >= -11.5 && lat <= 6.5 && lon >= 94.5 && lon <= 141.5;
+  };
+
   const handleLocationInputChange = (val) => {
     setOrderEventLocation(val);
     setShowLocationSuggestions(true);
@@ -273,44 +278,60 @@ export default function LandingPage() {
     locationTimerRef.current = setTimeout(async () => {
       try {
         let results = [];
-        // Coba Photon Komoot (cepat & tanpa batasan CORS)
+        // Coba Photon Komoot dengan Bounding Box & Filter Khusus Indonesia
         try {
-          const photonRes = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(val)}&limit=6&lang=en`);
+          const photonRes = await fetch(
+            `https://photon.komoot.io/api/?q=${encodeURIComponent(val)}&bbox=95.0,-11.0,141.0,6.0&limit=10&lang=id`
+          );
           const photonData = await photonRes.json();
           if (photonData?.features?.length > 0) {
-            results = photonData.features.map((feat) => {
-              const p = feat.properties;
-              const [lon, lat] = feat.geometry.coordinates;
-              const addrParts = [p.name, p.street, p.district, p.city, p.state].filter(Boolean);
-              return {
-                id: `${lat}_${lon}`,
-                name: p.name || addrParts[0] || 'Tempat Acara',
-                address: addrParts.slice(1).join(', ') || p.city || p.country || 'Indonesia',
-                fullAddress: addrParts.join(', '),
-                lat,
-                lon
-              };
-            });
+            results = photonData.features
+              .filter((feat) => {
+                const p = feat.properties;
+                const [lon, lat] = feat.geometry.coordinates;
+                const isIdCountry = p.countrycode?.toUpperCase() === 'ID' || p.country?.toLowerCase() === 'indonesia';
+                return isIdCountry && isLocationInIndonesia(lat, lon);
+              })
+              .slice(0, 6)
+              .map((feat) => {
+                const p = feat.properties;
+                const [lon, lat] = feat.geometry.coordinates;
+                const addrParts = [p.name, p.street, p.district, p.city, p.state].filter(Boolean);
+                return {
+                  id: `${lat}_${lon}`,
+                  name: p.name || addrParts[0] || 'Tempat Acara',
+                  address: addrParts.slice(1).join(', ') || p.city || 'Indonesia',
+                  fullAddress: addrParts.join(', '),
+                  lat,
+                  lon
+                };
+              });
           }
         } catch (errP) {
           console.warn('Photon error, trying Nominatim fallback:', errP);
         }
 
-        // Fallback OpenStreetMap Nominatim
+        // Fallback OpenStreetMap Nominatim dengan parameter resmi countrycodes=id
         if (results.length === 0) {
           const osmRes = await fetch(
-            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(val)}&countrycodes=id&limit=5&addressdetails=1`
+            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(val)}&countrycodes=id&limit=6&addressdetails=1`
           );
           const osmData = await osmRes.json();
           if (Array.isArray(osmData) && osmData.length > 0) {
-            results = osmData.map((item) => ({
-              id: item.place_id,
-              name: item.name || item.display_name.split(',')[0],
-              address: item.display_name,
-              fullAddress: item.display_name,
-              lat: parseFloat(item.lat),
-              lon: parseFloat(item.lon)
-            }));
+            results = osmData
+              .filter((item) => {
+                const lat = parseFloat(item.lat);
+                const lon = parseFloat(item.lon);
+                return isLocationInIndonesia(lat, lon);
+              })
+              .map((item) => ({
+                id: item.place_id,
+                name: item.name || item.display_name.split(',')[0],
+                address: item.display_name,
+                fullAddress: item.display_name,
+                lat: parseFloat(item.lat),
+                lon: parseFloat(item.lon)
+              }));
           }
         }
 
@@ -333,7 +354,7 @@ export default function LandingPage() {
   };
 
   // ==========================================
-  // LOGIKA MODAL PETA INTERAKTIF (LEAFLET / OPENSTREETMAP)
+  // LOGIKA MODAL PETA INTERAKTIF (LEAFLET DIBATASI WILAYAH INDONESIA)
   // ==========================================
   const loadLeafletAssets = () => {
     return new Promise((resolve) => {
@@ -366,17 +387,26 @@ export default function LandingPage() {
   };
 
   const reverseGeocodeCoords = async (lat, lon) => {
+    if (!isLocationInIndonesia(lat, lon)) {
+      setMapPickedAddress('Peringatan: Titik lokasi berada di luar wilayah Indonesia. Silakan pilih titik lokasi di Indonesia.');
+      return;
+    }
+
     setIsResolvingMapAddress(true);
     try {
       const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`);
       const data = await res.json();
+      if (data?.address?.country_code && data.address.country_code !== 'id') {
+        setMapPickedAddress('Peringatan: Titik lokasi berada di luar wilayah Indonesia. Silakan pilih titik di Indonesia.');
+        return;
+      }
       if (data?.display_name) {
         setMapPickedAddress(data.display_name);
       } else {
-        setMapPickedAddress(`Titik Lokasi: ${lat.toFixed(5)}, ${lon.toFixed(5)}`);
+        setMapPickedAddress(`Titik Lokasi: ${lat.toFixed(5)}, ${lon.toFixed(5)} (Indonesia)`);
       }
     } catch (e) {
-      setMapPickedAddress(`Titik Lokasi: ${lat.toFixed(5)}, ${lon.toFixed(5)}`);
+      setMapPickedAddress(`Titik Lokasi: ${lat.toFixed(5)}, ${lon.toFixed(5)} (Indonesia)`);
     } finally {
       setIsResolvingMapAddress(false);
     }
@@ -388,7 +418,7 @@ export default function LandingPage() {
     setMapSearchQuery(initialQuery);
     setMapPickedAddress(initialQuery);
 
-    const coords = orderLocationCoords || { lat: -6.2088, lon: 106.8456 }; // Default Jakarta
+    const coords = orderLocationCoords || { lat: -6.2088, lon: 106.8456 }; // Default Jakarta, Indonesia
     setMapPickedCoords(coords);
 
     const L = await loadLeafletAssets();
@@ -399,7 +429,18 @@ export default function LandingPage() {
         leafletMapInstanceRef.current = null;
       }
 
-      const map = L.map(mapContainerRef.current).setView([coords.lat, coords.lon], 15);
+      // Kunci navigasi peta secara ketat di batas negara Indonesia
+      const indonesiaBounds = [
+        [-11.5, 94.5], // Barat Daya (Samudera Hindia dekat Jawa/NTT)
+        [6.5, 141.5]   // Timur Laut (Papua & Laut Sulawesi)
+      ];
+
+      const map = L.map(mapContainerRef.current, {
+        maxBounds: indonesiaBounds,
+        maxBoundsViscosity: 0.9,
+        minZoom: 4
+      }).setView([coords.lat, coords.lon], 15);
+
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors'
       }).addTo(map);
@@ -415,6 +456,15 @@ export default function LandingPage() {
       }
 
       map.on('click', (e) => {
+        if (!isLocationInIndonesia(e.latlng.lat, e.latlng.lng)) {
+          Swal.fire({
+            title: 'Lokasi di Luar Indonesia',
+            text: 'Pilihan lokasi dibatasi hanya di dalam wilayah negara Indonesia.',
+            icon: 'warning',
+            confirmButtonColor: '#B8860B'
+          });
+          return;
+        }
         marker.setLatLng(e.latlng);
         setMapPickedCoords({ lat: e.latlng.lat, lon: e.latlng.lng });
         reverseGeocodeCoords(e.latlng.lat, e.latlng.lng);
@@ -422,6 +472,15 @@ export default function LandingPage() {
 
       marker.on('dragend', () => {
         const pos = marker.getLatLng();
+        if (!isLocationInIndonesia(pos.lat, pos.lng)) {
+          Swal.fire({
+            title: 'Lokasi di Luar Indonesia',
+            text: 'Pilihan lokasi dibatasi hanya di dalam wilayah negara Indonesia.',
+            icon: 'warning',
+            confirmButtonColor: '#B8860B'
+          });
+          return;
+        }
         setMapPickedCoords({ lat: pos.lat, lon: pos.lng });
         reverseGeocodeCoords(pos.lat, pos.lng);
       });
@@ -437,22 +496,40 @@ export default function LandingPage() {
       let foundName = '';
 
       try {
-        const pRes = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(queryText)}&limit=1`);
+        const pRes = await fetch(
+          `https://photon.komoot.io/api/?q=${encodeURIComponent(queryText)}&bbox=95.0,-11.0,141.0,6.0&limit=5&lang=id`
+        );
         const pData = await pRes.json();
-        if (pData?.features?.length > 0) {
-          const feat = pData.features[0];
-          [foundLon, foundLat] = feat.geometry.coordinates;
-          foundName = [feat.properties.name, feat.properties.street, feat.properties.city, feat.properties.state].filter(Boolean).join(', ');
+        const validFeature = pData?.features?.find((feat) => {
+          const p = feat.properties;
+          const [lon, lat] = feat.geometry.coordinates;
+          const isIdCountry = p.countrycode?.toUpperCase() === 'ID' || p.country?.toLowerCase() === 'indonesia';
+          return isIdCountry && isLocationInIndonesia(lat, lon);
+        });
+
+        if (validFeature) {
+          [foundLon, foundLat] = validFeature.geometry.coordinates;
+          foundName = [
+            validFeature.properties.name,
+            validFeature.properties.street,
+            validFeature.properties.city,
+            validFeature.properties.state
+          ].filter(Boolean).join(', ');
         }
       } catch (err) {}
 
       if (!foundLat) {
-        const osmRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryText)}&countrycodes=id&limit=1&addressdetails=1`);
+        const osmRes = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryText)}&countrycodes=id&limit=3&addressdetails=1`
+        );
         const osmData = await osmRes.json();
         if (Array.isArray(osmData) && osmData.length > 0) {
-          foundLat = parseFloat(osmData[0].lat);
-          foundLon = parseFloat(osmData[0].lon);
-          foundName = osmData[0].display_name;
+          const validOsm = osmData.find((item) => isLocationInIndonesia(parseFloat(item.lat), parseFloat(item.lon)));
+          if (validOsm) {
+            foundLat = parseFloat(validOsm.lat);
+            foundLon = parseFloat(validOsm.lon);
+            foundName = validOsm.display_name;
+          }
         }
       }
 
@@ -465,8 +542,8 @@ export default function LandingPage() {
         }
       } else {
         Swal.fire({
-          title: 'Lokasi Tidak Ditemukan',
-          text: 'Silakan coba kata kunci lain atau klik langsung pada peta.',
+          title: 'Lokasi Tidak Ditemukan di Indonesia',
+          text: 'Pencarian dibatasi khusus untuk wilayah Indonesia. Silakan coba kata kunci gedung, jalan, atau kota di Indonesia.',
           icon: 'info',
           confirmButtonColor: '#B8860B'
         });
@@ -479,6 +556,15 @@ export default function LandingPage() {
   };
 
   const handleConfirmPickedMapLocation = () => {
+    if (!isLocationInIndonesia(mapPickedCoords.lat, mapPickedCoords.lon)) {
+      Swal.fire({
+        title: 'Lokasi di Luar Indonesia',
+        text: 'Mohon tentukan titik lokasi acara yang berada di dalam wilayah Indonesia.',
+        icon: 'warning',
+        confirmButtonColor: '#B8860B'
+      });
+      return;
+    }
     const chosenAddress = mapPickedAddress.trim() || `Titik Lokasi (${mapPickedCoords.lat.toFixed(5)}, ${mapPickedCoords.lon.toFixed(5)})`;
     setOrderEventLocation(chosenAddress);
     setOrderLocationCoords(mapPickedCoords);
@@ -1520,7 +1606,7 @@ export default function LandingPage() {
                           type="text"
                           required
                           autoComplete="off"
-                          placeholder="Ketik nama gedung, masjid, hotel, atau alamat acara..."
+                          placeholder="Ketik nama gedung, masjid, hotel, atau alamat di Indonesia..."
                           value={orderEventLocation}
                           onChange={(e) => handleLocationInputChange(e.target.value)}
                           onFocus={() => {
@@ -1529,7 +1615,7 @@ export default function LandingPage() {
                           className="lp-order-input lp-order-input-with-icon"
                         />
                         {isLoadingLocationSuggestions && (
-                          <div className="lp-location-spinner" title="Mencari rekomendasi lokasi..." />
+                          <div className="lp-location-spinner" title="Mencari rekomendasi lokasi di Indonesia..." />
                         )}
                       </div>
 
@@ -1537,7 +1623,7 @@ export default function LandingPage() {
                       {showLocationSuggestions && locationSuggestions.length > 0 && (
                         <div className="lp-location-suggestions-dropdown">
                           <div className="lp-suggestions-header">
-                            <span>Saran Lokasi Terverifikasi:</span>
+                            <span>Saran Lokasi di Indonesia (Terverifikasi):</span>
                             <button
                               type="button"
                               onClick={() => setShowLocationSuggestions(false)}
@@ -1727,8 +1813,8 @@ export default function LandingPage() {
             <div className="lp-order-modal-dialog lp-map-modal-dialog" onClick={(e) => e.stopPropagation()}>
               <div className="lp-order-modal-header">
                 <div>
-                  <h3 className="lp-order-modal-title">Pilih Titik Lokasi Acara di Peta</h3>
-                  <p className="lp-order-modal-subtitle">Geser pin marker atau klik di mana saja pada peta untuk menentukan lokasi yang presisi</p>
+                  <h3 className="lp-order-modal-title">Pilih Titik Lokasi Acara di Peta (Khusus Indonesia)</h3>
+                  <p className="lp-order-modal-subtitle">Cari atau klik pada peta di seluruh wilayah Indonesia untuk menentukan titik koordinat yang presisi</p>
                 </div>
                 <button
                   type="button"
@@ -1745,7 +1831,7 @@ export default function LandingPage() {
                 <div className="lp-map-search-bar">
                   <input
                     type="text"
-                    placeholder="Ketik nama gedung, masjid, hotel, atau jalan lalu tekan Cari..."
+                    placeholder="Ketik nama gedung, masjid, hotel, atau jalan di Indonesia lalu tekan Cari..."
                     value={mapSearchQuery}
                     onChange={(e) => setMapSearchQuery(e.target.value)}
                     onKeyDown={(e) => {
