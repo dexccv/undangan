@@ -374,7 +374,7 @@ export default function DevDashboard() {
       combined.push(sample);
       try {
         localStorage.setItem('digitalisasi_orders', JSON.stringify([sample]));
-      } catch (e) {}
+      } catch (e) { }
     }
 
     // Sort in memory by created_at desc
@@ -394,7 +394,7 @@ export default function DevDashboard() {
       const updated = prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o));
       try {
         localStorage.setItem('digitalisasi_orders', JSON.stringify(updated));
-      } catch (e) {}
+      } catch (e) { }
       return updated;
     });
 
@@ -429,7 +429,7 @@ export default function DevDashboard() {
         const filtered = prev.filter((o) => o.id !== orderId);
         try {
           localStorage.setItem('digitalisasi_orders', JSON.stringify(filtered));
-        } catch (e) {}
+        } catch (e) { }
         return filtered;
       });
 
@@ -1027,7 +1027,7 @@ export default function DevDashboard() {
     setIsSaving(true);
     try {
       const coupleRef = doc(db, 'couples', formData.id.trim().toLowerCase());
-      
+
       const sanitizeFirestoreData = (val) => {
         if (val === undefined || val === null) return '';
         if (Array.isArray(val)) {
@@ -1310,7 +1310,7 @@ export default function DevDashboard() {
       </header>
 
       {/* Mobile Drawer Backdrop */}
-      <div 
+      <div
         className={`dev-mobile-backdrop ${mobileSidebarOpen ? 'is-open' : ''}`}
         onClick={() => setMobileSidebarOpen(false)}
         aria-hidden={!mobileSidebarOpen}
@@ -1326,8 +1326,8 @@ export default function DevDashboard() {
             <h3>Digitalisasi.id</h3>
             <span>Panel Pengelola</span>
           </div>
-          <button 
-            type="button" 
+          <button
+            type="button"
             className="dev-sidebar-close-btn"
             onClick={() => setMobileSidebarOpen(false)}
             aria-label="Tutup menu navigasi"
@@ -1693,24 +1693,24 @@ export default function DevDashboard() {
               <div className="dev-editor-actions-top">
                 <div className="dev-presets-group">
                   <span className="dev-presets-label">Preset Paket:</span>
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     className={`dev-preset-btn ${formData.paket_pesanan === 'Paket Silver' ? 'active' : ''}`}
                     onClick={() => handleApplyPackagePreset('Silver')}
                     title="Terapkan konfigurasi Paket Silver"
                   >
                     Silver
                   </button>
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     className={`dev-preset-btn ${formData.paket_pesanan === 'Paket Gold Imperial' ? 'active' : ''}`}
                     onClick={() => handleApplyPackagePreset('Gold')}
                     title="Terapkan konfigurasi Paket Gold Imperial"
                   >
                     Gold Imperial
                   </button>
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     className={`dev-preset-btn ${formData.paket_pesanan === 'Paket Royal Platinum' ? 'active' : ''}`}
                     onClick={() => handleApplyPackagePreset('Platinum')}
                     title="Terapkan konfigurasi Paket Royal Platinum"
@@ -1719,9 +1719,9 @@ export default function DevDashboard() {
                   </button>
                 </div>
 
-                <button 
-                  type="button" 
-                  className="dev-btn-secondary" 
+                <button
+                  type="button"
+                  className="dev-btn-secondary"
                   onClick={() => setIsSmartParserOpen(true)}
                   title="Ekstrak data dari format chat WhatsApp"
                 >
@@ -1756,7 +1756,7 @@ export default function DevDashboard() {
                         placeholder="Contoh: nadia-agus"
                         className="dev-field"
                       />
-                      <small className="dev-helper-text">Tautan undangan Anda nantinya: domainanda.com/?id=<strong>{formData.id || 'nama-tautan'}</strong></small>
+                      <small className="dev-helper-text">Tautan undangan Anda nantinya: tamu-undangan.vercel.app/?id=<strong>{formData.id || 'nama-tautan'}</strong></small>
                     </div>
 
                     <div className="dev-input-group">

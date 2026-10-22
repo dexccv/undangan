@@ -721,8 +721,8 @@ export default function LandingPage() {
     const orderId = 'ord-' + Date.now();
     setCreatedOrderId(orderId);
 
-    const generatedMapsUrl = orderLocationMapsUrl || (orderLocationCoords 
-      ? `https://www.google.com/maps/search/?api=1&query=${orderLocationCoords.lat},${orderLocationCoords.lon}` 
+    const generatedMapsUrl = orderLocationMapsUrl || (orderLocationCoords
+      ? `https://www.google.com/maps/search/?api=1&query=${orderLocationCoords.lat},${orderLocationCoords.lon}`
       : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(finalLocation)}`);
 
     const newOrder = {
@@ -869,7 +869,7 @@ export default function LandingPage() {
     try {
       const safeName = (receiptFile.name || 'bukti.jpg').replace(/[^a-zA-Z0-9.-]/g, '_');
       const storageRef = ref(storage, `orders/receipts/${createdOrderId || Date.now()}_${safeName}`);
-      
+
       const uploadPromise = (async () => {
         const uploadRes = await uploadBytes(storageRef, receiptFile);
         return await getDownloadURL(uploadRes.ref);
@@ -933,7 +933,7 @@ export default function LandingPage() {
       `Halo Developer Digitalisasi.id (081225589199), saya telah melakukan pemesanan dan pembayaran via QRIS:`,
       ``,
       `*Paket:* ${orderPackage} (${orderPrice})`,
-      `*Nama Tautan Undangan:* domainanda.com/?id=${finalSlug}`,
+      `*Nama Tautan Undangan:* tamu-undangan.vercel.app/?id=${finalSlug}`,
       `*Nomor WhatsApp:* ${finalPhone}`,
       ``,
       `*Mempelai Wanita:* ${finalWanita} (${orderWanitaLengkap.trim()})`,
@@ -1391,15 +1391,15 @@ export default function LandingPage() {
 
         {/* Modal Pemesanan Paket (Quick Order Sheet) */}
         {isOrderModalOpen && (
-          <div 
-            className="lp-order-modal-backdrop" 
+          <div
+            className="lp-order-modal-backdrop"
             onClick={() => setIsOrderModalOpen(false)}
             role="dialog"
             aria-modal="true"
             aria-labelledby="order-modal-title"
           >
-            <div 
-              className="lp-order-modal-card" 
+            <div
+              className="lp-order-modal-card"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="lp-order-modal-header">
@@ -1410,15 +1410,15 @@ export default function LandingPage() {
                       {orderStep === 'form' ? `Pemesanan ${orderPackage}` : 'Pembayaran Tagihan via QRIS'}
                     </h3>
                     <p className="lp-order-modal-sub">
-                      {orderStep === 'form' 
-                        ? `Biaya Paket: ${orderPrice} • Lengkapi data mempelai untuk pembuatan draf` 
+                      {orderStep === 'form'
+                        ? `Biaya Paket: ${orderPrice} • Lengkapi data mempelai untuk pembuatan draf`
                         : `Total Tagihan: ${orderPrice} • Scan QRIS di bawah dan unggah bukti transfer`}
                     </p>
                   </div>
                 </div>
-                <button 
-                  type="button" 
-                  className="lp-order-modal-close" 
+                <button
+                  type="button"
+                  className="lp-order-modal-close"
                   onClick={() => setIsOrderModalOpen(false)}
                   aria-label="Tutup formulir pemesanan"
                 >
@@ -1444,7 +1444,7 @@ export default function LandingPage() {
                       className="lp-order-input"
                     />
                     <small className="lp-order-helper-text">
-                      Tautan undangan Anda nantinya: domainanda.com/?id=<strong>{orderSlug || 'dimas-anisa'}</strong>
+                      Tautan undangan Anda nantinya: tamu-undangan.vercel.app/?id=<strong>{orderSlug || 'dimas-anisa'}</strong>
                     </small>
                   </div>
 
@@ -1752,16 +1752,16 @@ export default function LandingPage() {
                   </div>
 
                   <div className="lp-order-modal-actions">
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       className="lp-btn lp-btn-cancel"
                       onClick={() => setIsOrderModalOpen(false)}
                       disabled={isSubmittingOrder}
                     >
                       Batal
                     </button>
-                    <button 
-                      type="submit" 
+                    <button
+                      type="submit"
                       className="lp-btn lp-btn-proceed lp-order-submit-btn"
                       disabled={isSubmittingOrder}
                     >
@@ -1782,10 +1782,10 @@ export default function LandingPage() {
                     </div>
 
                     <div className="lp-qris-image-frame">
-                      <img 
-                        src="/qris.jpeg" 
-                        alt="QRIS Digitalisasi.id" 
-                        className="lp-qris-img" 
+                      <img
+                        src="/qris.jpeg"
+                        alt="QRIS Digitalisasi.id"
+                        className="lp-qris-img"
                       />
                     </div>
 
@@ -1798,10 +1798,10 @@ export default function LandingPage() {
                       Scan kode barcode QRIS di atas melalui aplikasi m-Banking (BCA, Mandiri, BRI, BNI, BSI) atau e-Wallet (GoPay, OVO, Dana, ShopeePay).
                     </p>
 
-                    <a 
-                      href="/qris.jpeg" 
-                      download="QRIS-Digitalisasi-id.jpeg" 
-                      target="_blank" 
+                    <a
+                      href="/qris.jpeg"
+                      download="QRIS-Digitalisasi-id.jpeg"
+                      target="_blank"
                       rel="noopener noreferrer"
                       className="lp-btn-download-qris"
                     >
@@ -1847,8 +1847,8 @@ export default function LandingPage() {
 
                   {/* Tombol Aksi Final */}
                   <div className="lp-order-modal-actions">
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       className="lp-btn lp-btn-cancel"
                       onClick={() => setOrderStep('form')}
                       disabled={isUploadingReceipt}
@@ -1856,8 +1856,8 @@ export default function LandingPage() {
                       <ArrowLeft size={16} weight="bold" />
                       <span>Ubah Data Formulir</span>
                     </button>
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       className={`lp-btn lp-btn-proceed lp-order-submit-btn ${!receiptFile ? 'lp-btn-needs-receipt' : ''}`}
                       onClick={handleFinalConfirmPayment}
                       disabled={isUploadingReceipt}
