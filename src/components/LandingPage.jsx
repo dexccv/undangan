@@ -169,10 +169,6 @@ export default function LandingPage() {
         {/* Hero Section */}
         <section className="lp-hero">
           <div className="lp-hero-content">
-            <div className="lp-badge">
-              <Sparkle size={15} weight="fill" />
-              <span>STANDAR BARU UNDANGAN DIGITAL MODERN</span>
-            </div>
             <h1 className="lp-title">Undangan Digital Premium, Elegan &amp; Bebas Ribet</h1>
             <p className="lp-subtitle">
               Hadirkan kesan pertama yang berkelas untuk seluruh tamu undangan. Lengkap dengan animasi pembuka tirai mewah, galeri foto prewedding sinematik, musik latar syahdu, serta pencatatan konfirmasi kehadiran tamu secara otomatis.
@@ -258,7 +254,6 @@ export default function LandingPage() {
         {/* Features Section */}
         <section id="features" className="lp-features">
           <div className="lp-section-header">
-            <span className="lp-section-pill">KEUNGGULAN UTAMA</span>
             <h2 className="lp-section-title">Mengapa Memilih Digitalisasi.id?</h2>
             <p className="lp-section-sub">Diciptakan dengan desain presisi tinggi agar setiap tamu undangan Anda merasa disambut dengan istimewa:</p>
           </div>
@@ -301,7 +296,6 @@ export default function LandingPage() {
         {/* Pricing Section */}
         <section id="pricing" className="lp-pricing">
           <div className="lp-section-header">
-            <span className="lp-section-pill">PILIHAN PAKET</span>
             <h2 className="lp-section-title">Investasi untuk Hari Bahagia Anda</h2>
             <p className="lp-section-sub">Pilih paket terbaik yang sesuai dengan konsep dan skala acara pernikahan Anda:</p>
             
