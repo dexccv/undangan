@@ -1171,20 +1171,412 @@
   text-align: left;
 }
 
+/* ========================================================
+   MOBILE NAVIGATION & RESPONSIVE ARCHITECTURE
+   ======================================================== */
+
+/* Mobile Header (Hidden on Desktop, Visible on <= 900px) */
+.dev-mobile-header {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.65rem 1.15rem;
+  background: #FFFFFF;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.07);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+  position: sticky;
+  top: 0;
+  z-index: 1050;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.dev-mobile-header-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.dev-brand-icon-box.sm {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+}
+
+.dev-mobile-header-text h3 {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--dev-text);
+  margin: 0;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+
+.dev-mobile-role-tag {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--dev-gold);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.dev-mobile-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dev-mobile-badge-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 9999px;
+  background: rgba(184, 134, 11, 0.12);
+  color: var(--dev-gold);
+  border: 1px solid rgba(184, 134, 11, 0.25);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dev-mobile-badge-btn .dev-badge-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: var(--dev-gold);
+  color: #FFFFFF;
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 0 4px;
+}
+
+.dev-mobile-hamburger-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
+  background: #FAF7F0;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  color: var(--dev-text);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dev-mobile-hamburger-btn:hover {
+  background: #F0ECE1;
+  color: var(--dev-gold);
+}
+
+/* Mobile Drawer Backdrop */
+.dev-mobile-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(24, 21, 18, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 1250;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.dev-mobile-backdrop.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Close button inside sidebar (mobile only) */
+.dev-sidebar-close-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  color: #FFFFFF;
+  cursor: pointer;
+  margin-left: auto;
+  transition: background 0.2s;
+}
+
+.dev-sidebar-close-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+/* Mobile Fast-Switch Segmented Tabs */
+.dev-mobile-nav-pills {
+  display: none;
+  align-items: center;
+  gap: 0.35rem;
+  background: #FFFFFF;
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  border-radius: 12px;
+  padding: 4px;
+  margin-bottom: 1.15rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+}
+
+.dev-pill-tab {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.55rem 0.4rem;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--dev-text-muted);
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.dev-pill-tab.is-active {
+  background: #181512;
+  color: #FFFFFF;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.14);
+}
+
+.dev-pill-counter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background: var(--dev-gold);
+  color: #FFFFFF;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 0 3px;
+}
+
+/* Mobile Editor Sub-Tabs Chip Bar */
+.dev-mobile-editor-chips {
+  display: none;
+  align-items: center;
+  gap: 0.45rem;
+  overflow-x: auto;
+  padding-bottom: 0.4rem;
+  margin-bottom: 1.15rem;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.dev-mobile-editor-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.dev-chip-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 9999px;
+  background: #FFFFFF;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  color: var(--dev-text);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.dev-chip-tab.is-active {
+  background: var(--dev-gold);
+  color: #FFFFFF;
+  border-color: var(--dev-gold);
+  box-shadow: 0 2px 8px rgba(184, 134, 11, 0.25);
+}
+
 @media (max-width: 900px) {
+  .dev-mobile-header {
+    display: flex;
+  }
+
+  .dev-mobile-backdrop {
+    display: block;
+  }
+
+  .dev-sidebar-close-btn {
+    display: flex;
+  }
+
+  .dev-mobile-nav-pills {
+    display: flex;
+  }
+
+  .dev-mobile-editor-chips {
+    display: flex;
+  }
+
+  /* Make dev-layout full-width column container, but sidebar becomes off-canvas drawer */
   .dev-layout {
     flex-direction: column;
+    min-height: 100vh;
   }
+
   .dev-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: min(85vw, 300px);
+    height: 100dvh;
+    z-index: 1300;
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: none;
+    overflow-y: auto;
+  }
+
+  .dev-sidebar.is-open {
+    transform: translateX(0);
+    box-shadow: 8px 0 35px rgba(0, 0, 0, 0.35);
+  }
+
+  .dev-main {
+    padding: 1rem 1rem 2rem;
+    overflow-x: hidden;
+  }
+
+  /* Topbar Status compact on mobile */
+  .dev-topbar {
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    font-size: 0.78rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .dev-topbar-left {
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .dev-topbar-right {
     width: 100%;
   }
-  .dev-main {
-    padding: 1.5rem;
+
+  .dev-topbar-link {
+    display: inline-flex;
+    font-size: 0.75rem;
   }
+
+  /* Bento Metrics 3-column inline compact on mobile */
+  .dev-orders-metrics-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 0.5rem !important;
+    margin-bottom: 1rem !important;
+  }
+
+  .dev-stat-card {
+    padding: 0.65rem 0.55rem !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.25rem !important;
+    border-radius: 10px !important;
+  }
+
+  .dev-stat-icon-wrapper {
+    width: 28px !important;
+    height: 28px !important;
+    border-radius: 7px !important;
+  }
+
+  .dev-stat-icon-wrapper svg {
+    width: 16px !important;
+    height: 16px !important;
+  }
+
+  .dev-stat-label {
+    font-size: 0.65rem !important;
+    letter-spacing: 0.01em !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 100% !important;
+  }
+
+  .dev-stat-value {
+    font-size: 1.2rem !important;
+    margin: 0 !important;
+  }
+
+  .dev-stat-note {
+    display: none !important;
+  }
+
+  /* Order Filters Bar */
+  .dev-orders-filter-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .dev-orders-tabs {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .dev-orders-tab {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.76rem;
+    white-space: nowrap;
+  }
+
+  /* Order Card */
+  .dev-order-card {
+    padding: 1.15rem;
+    border-radius: 12px;
+  }
+
+  .dev-order-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.65rem;
+  }
+
+  .dev-order-status-wrap {
+    width: 100%;
+  }
+
+  .dev-status-select {
+    width: 100%;
+  }
+
+  .dev-order-card-footer {
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .dev-btn-convert,
+  .dev-btn-wa-pill {
+    width: 100%;
+    justify-content: center;
+  }
+
   .editor-form-grid {
     grid-template-columns: 1fr;
   }
 }
+
 
 /* ========================================================
    ORDERS QUEUE & 1-CLICK GENERATOR

@@ -54,7 +54,8 @@ import {
   FileText,
   ChatTeardropText,
   FlowerLotus,
-  MusicNotes
+  MusicNotes,
+  List
 } from '@phosphor-icons/react';
 import * as XLSX from 'xlsx';
 import Swal from 'sweetalert2';
@@ -100,6 +101,25 @@ export default function DevDashboard() {
   const [searchRsvp, setSearchRsvp] = useState('');
   const [previewDevice, setPreviewDevice] = useState('mobile');
   const [testGuestName, setTestGuestName] = useState('Sahabat Tercinta');
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    if (mobileSidebarOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && mobileSidebarOpen) {
+        setMobileSidebarOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [mobileSidebarOpen]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -998,8 +1018,54 @@ export default function DevDashboard() {
 
   return (
     <div className="dev-layout">
-      {/* Sidebar */}
-      <aside className="dev-sidebar">
+      {/* Mobile Sticky Top Header */}
+      <header className="dev-mobile-header">
+        <div className="dev-mobile-header-brand">
+          <div className="dev-brand-icon-box sm">
+            <FlowerLotus size={18} weight="fill" />
+          </div>
+          <div className="dev-mobile-header-text">
+            <h3>Digitalisasi.id</h3>
+            <span className="dev-mobile-role-tag">Panel Dev</span>
+          </div>
+        </div>
+
+        <div className="dev-mobile-header-actions">
+          {pendingOrdersCount > 0 && (
+            <button
+              type="button"
+              className="dev-mobile-badge-btn"
+              onClick={() => {
+                setCurrentView('orders');
+                fetchOrders();
+              }}
+              title="Pesanan Baru Menunggu"
+            >
+              <ShoppingBag size={18} weight="bold" />
+              <span className="dev-badge-count">{pendingOrdersCount}</span>
+            </button>
+          )}
+
+          <button
+            type="button"
+            className="dev-mobile-hamburger-btn"
+            onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
+            aria-label="Buka menu panel"
+          >
+            <List size={22} weight="bold" />
+          </button>
+        </div>
+      </header>
+
+      {/* Mobile Drawer Backdrop */}
+      <div 
+        className={`dev-mobile-backdrop ${mobileSidebarOpen ? 'is-open' : ''}`}
+        onClick={() => setMobileSidebarOpen(false)}
+        aria-hidden={!mobileSidebarOpen}
+      />
+
+      {/* Sidebar (Desktop Fixed & Mobile Slide Drawer) */}
+      <aside className={`dev-sidebar ${mobileSidebarOpen ? 'is-open' : ''}`}>
         <div className="dev-sidebar-brand">
           <div className="dev-brand-icon-box">
             <FlowerLotus size={22} weight="fill" />
@@ -1008,6 +1074,14 @@ export default function DevDashboard() {
             <h3>Digitalisasi.id</h3>
             <span>Panel Pengelola</span>
           </div>
+          <button 
+            type="button" 
+            className="dev-sidebar-close-btn"
+            onClick={() => setMobileSidebarOpen(false)}
+            aria-label="Tutup menu navigasi"
+          >
+            <X size={20} weight="bold" />
+          </button>
         </div>
 
         <nav className="dev-sidebar-nav" aria-label="Menu Utama">
@@ -1017,6 +1091,7 @@ export default function DevDashboard() {
             onClick={() => {
               setCurrentView('orders');
               fetchOrders();
+              setMobileSidebarOpen(false);
             }}
           >
             <ShoppingBag size={19} weight="duotone" />
@@ -1029,7 +1104,10 @@ export default function DevDashboard() {
           <button
             type="button"
             className={`dev-nav-item ${currentView === 'list' ? 'is-active' : ''}`}
-            onClick={() => setCurrentView('list')}
+            onClick={() => {
+              setCurrentView('list');
+              setMobileSidebarOpen(false);
+            }}
           >
             <ImagesSquare size={19} weight="duotone" />
             <span>Daftar Undangan</span>
@@ -1041,6 +1119,7 @@ export default function DevDashboard() {
             onClick={() => {
               setCurrentView('blast');
               setSelectedCoupleForLinks(couples[0] || null);
+              setMobileSidebarOpen(false);
             }}
           >
             <PaperPlaneRight size={19} weight="duotone" />
@@ -1054,7 +1133,10 @@ export default function DevDashboard() {
             <button
               type="button"
               className={`editor-tab-btn ${activeEditorTab === 'profile' ? 'active' : ''}`}
-              onClick={() => setActiveEditorTab('profile')}
+              onClick={() => {
+                setActiveEditorTab('profile');
+                setMobileSidebarOpen(false);
+              }}
             >
               <UserList size={18} weight="duotone" />
               <span>Profil Mempelai</span>
@@ -1062,7 +1144,10 @@ export default function DevDashboard() {
             <button
               type="button"
               className={`editor-tab-btn ${activeEditorTab === 'events' ? 'active' : ''}`}
-              onClick={() => setActiveEditorTab('events')}
+              onClick={() => {
+                setActiveEditorTab('events');
+                setMobileSidebarOpen(false);
+              }}
             >
               <CalendarCheck size={18} weight="duotone" />
               <span>Jadwal Acara</span>
@@ -1070,7 +1155,10 @@ export default function DevDashboard() {
             <button
               type="button"
               className={`editor-tab-btn ${activeEditorTab === 'photos' ? 'active' : ''}`}
-              onClick={() => setActiveEditorTab('photos')}
+              onClick={() => {
+                setActiveEditorTab('photos');
+                setMobileSidebarOpen(false);
+              }}
             >
               <Camera size={18} weight="duotone" />
               <span>Foto &amp; Media</span>
@@ -1078,7 +1166,10 @@ export default function DevDashboard() {
             <button
               type="button"
               className={`editor-tab-btn ${activeEditorTab === 'story' ? 'active' : ''}`}
-              onClick={() => setActiveEditorTab('story')}
+              onClick={() => {
+                setActiveEditorTab('story');
+                setMobileSidebarOpen(false);
+              }}
             >
               <Heart size={18} weight="duotone" />
               <span>Perjalanan Cinta</span>
@@ -1086,7 +1177,10 @@ export default function DevDashboard() {
             <button
               type="button"
               className={`editor-tab-btn ${activeEditorTab === 'gallery' ? 'active' : ''}`}
-              onClick={() => setActiveEditorTab('gallery')}
+              onClick={() => {
+                setActiveEditorTab('gallery');
+                setMobileSidebarOpen(false);
+              }}
             >
               <ImagesSquare size={18} weight="duotone" />
               <span>Galeri Prewedding</span>
@@ -1094,7 +1188,10 @@ export default function DevDashboard() {
             <button
               type="button"
               className={`editor-tab-btn ${activeEditorTab === 'accounts' ? 'active' : ''}`}
-              onClick={() => setActiveEditorTab('accounts')}
+              onClick={() => {
+                setActiveEditorTab('accounts');
+                setMobileSidebarOpen(false);
+              }}
             >
               <CreditCard size={18} weight="duotone" />
               <span>Rekening &amp; Hadiah</span>
@@ -1102,7 +1199,10 @@ export default function DevDashboard() {
             <button
               type="button"
               className={`editor-tab-btn ${activeEditorTab === 'preview' ? 'active' : ''}`}
-              onClick={() => setActiveEditorTab('preview')}
+              onClick={() => {
+                setActiveEditorTab('preview');
+                setMobileSidebarOpen(false);
+              }}
             >
               <Eye size={18} weight="duotone" />
               <span>Pratinjau Layar</span>
@@ -1110,7 +1210,10 @@ export default function DevDashboard() {
             <button
               type="button"
               className={`editor-tab-btn ${activeEditorTab === 'monitor' ? 'active' : ''}`}
-              onClick={() => setActiveEditorTab('monitor')}
+              onClick={() => {
+                setActiveEditorTab('monitor');
+                setMobileSidebarOpen(false);
+              }}
             >
               <ChartLineUp size={18} weight="duotone" />
               <span>Kehadiran &amp; Doa Tamu</span>
@@ -1131,6 +1234,80 @@ export default function DevDashboard() {
 
       {/* Main Content Area */}
       <main className="dev-main">
+        {/* Fast-Switch Segmented Tabs Bar (Mobile Only) */}
+        <nav className="dev-mobile-nav-pills" role="tablist" aria-label="Navigasi Cepat Halaman">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={currentView === 'orders'}
+            className={`dev-pill-tab ${currentView === 'orders' ? 'is-active' : ''}`}
+            onClick={() => {
+              setCurrentView('orders');
+              fetchOrders();
+            }}
+          >
+            <ShoppingBag size={16} weight="duotone" />
+            <span>Pesanan</span>
+            {pendingOrdersCount > 0 && <span className="dev-pill-counter">{pendingOrdersCount}</span>}
+          </button>
+
+          <button
+            type="button"
+            role="tab"
+            aria-selected={currentView === 'list'}
+            className={`dev-pill-tab ${currentView === 'list' ? 'is-active' : ''}`}
+            onClick={() => setCurrentView('list')}
+          >
+            <ImagesSquare size={16} weight="duotone" />
+            <span>Undangan ({couples.length})</span>
+          </button>
+
+          <button
+            type="button"
+            role="tab"
+            aria-selected={currentView === 'blast'}
+            className={`dev-pill-tab ${currentView === 'blast' ? 'is-active' : ''}`}
+            onClick={() => {
+              setCurrentView('blast');
+              setSelectedCoupleForLinks(couples[0] || null);
+            }}
+          >
+            <PaperPlaneRight size={16} weight="duotone" />
+            <span>Blast WA</span>
+          </button>
+        </nav>
+
+        {/* Editor Sub-Tabs Horizontal Scrollable Strip (Mobile Only, when in Edit View) */}
+        {currentView === 'edit' && (
+          <div className="dev-mobile-editor-chips" role="tablist" aria-label="Bagian Formulir Undangan">
+            {[
+              { id: 'profile', label: 'Profil Mempelai', icon: UserList },
+              { id: 'events', label: 'Jadwal Acara', icon: CalendarCheck },
+              { id: 'photos', label: 'Foto & Media', icon: Camera },
+              { id: 'story', label: 'Kisah Cinta', icon: Heart },
+              { id: 'gallery', label: 'Galeri', icon: ImagesSquare },
+              { id: 'accounts', label: 'Rekening', icon: CreditCard },
+              { id: 'preview', label: 'Pratinjau', icon: Eye },
+              { id: 'monitor', label: 'Tamu RSVP', icon: ChartLineUp }
+            ].map((tab) => {
+              const TabIcon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={activeEditorTab === tab.id}
+                  className={`dev-chip-tab ${activeEditorTab === tab.id ? 'is-active' : ''}`}
+                  onClick={() => setActiveEditorTab(tab.id)}
+                >
+                  <TabIcon size={14} weight="duotone" />
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         {/* Executive Status Header Bar */}
         <div className="dev-topbar">
           <div className="dev-topbar-left">
