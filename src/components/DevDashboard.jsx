@@ -413,6 +413,150 @@ export default function DevDashboard() {
     });
   };
 
+  const handleViewReceipt = (ord) => {
+    const imageUrl = ord.receipt_url || ord.receipt_preview;
+    if (imageUrl) {
+      Swal.fire({
+        title: 'Bukti Pembayaran QRIS',
+        html: `
+          <div style="text-align: left; margin-bottom: 0.85rem; font-size: 0.84rem; color: #4A443C; line-height: 1.5;">
+            <div><strong>Mempelai:</strong> ${ord.couple_name || 'Mempelai'}</div>
+            <div><strong>Paket:</strong> ${ord.package_name || '-'} (${ord.package_price || '-'})</div>
+            <div><strong>Nama Berkas:</strong> ${ord.receipt_name || 'bukti-transfer.jpg'}</div>
+          </div>
+          <div style="max-height: 420px; overflow: auto; border-radius: 12px; border: 1.5px solid #E6E2D8; background: #FAF9F6; box-shadow: inset 0 2px 6px rgba(0,0,0,0.04);">
+            <img src="${imageUrl}" alt="Bukti Transfer" style="width: 100%; height: auto; display: block; object-fit: contain; border-radius: 10px;" />
+          </div>
+        `,
+        showCancelButton: true,
+        confirmButtonColor: '#B8860B',
+        cancelButtonColor: '#161412',
+        confirmButtonText: 'Buka Ukuran Penuh',
+        cancelButtonText: 'Tutup',
+        showDenyButton: true,
+        denyButtonText: 'Ganti / Unggah Foto',
+        denyButtonColor: '#4A443C'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          window.open(imageUrl, '_blank');
+        } else if (result.isDenied) {
+          triggerReceiptUploadForOrder(ord.id);
+        }
+      });
+    } else {
+      // Order has receipt_name or has_receipt flag but no direct image URL stored yet
+      Swal.fire({
+        title: 'Foto Bukti Transfer QRIS',
+        html: `
+          <div style="text-align: left; font-size: 0.88rem; line-height: 1.5; color: #333;">
+            <p style="margin-bottom: 0.5rem;">Nama Berkas: <strong>${ord.receipt_name || 'Bukti Transfer'}</strong></p>
+            <p style="color: #666; font-size: 0.82rem; margin-bottom: 0.85rem;">
+              Foto bukti transfer ini dilampirkan oleh pemesan (<strong>${ord.couple_name}</strong>) saat konfirmasi pesanan melalui WhatsApp.
+            </p>
+            <div style="padding: 0.85rem; background: #F8F7F4; border-radius: 10px; border: 1px solid #E6E2D8; font-size: 0.82rem; color: #555;">
+              <p style="margin: 0;">
+                Anda dapat melihat foto bukti langsung di pesan WhatsApp pemesan, atau mengunggah fotonya sekarang ke kartu pesanan ini agar tersimpan dan dapat dibuka kapan saja.
+              </p>
+            </div>
+          </div>
+        `,
+        icon: 'info',
+        showCancelButton: true,
+        showDenyButton: true,
+        confirmButtonColor: '#25D366',
+        confirmButtonText: 'Chat Pemesan di WA',
+        denyButtonColor: '#B8860B',
+        denyButtonText: 'Unggah Foto Bukti Sekarang',
+        cancelButtonText: 'Tutup',
+        cancelButtonColor: '#161412'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          const phone = (ord.customer_phone || '').replace(/\D/g, '');
+          if (phone) {
+            window.open(`https://wa.me/${phone}?text=${encodeURIComponent(`Halo ${ord.couple_name}, saya admin Digitalisasi.id ingin menanyakan foto bukti transfer ${ord.receipt_name || 'pembayaran'}.`)}`, '_blank');
+          } else {
+            Swal.fire('Info', 'Nomor telepon pemesan tidak tersedia.', 'info');
+          }
+        } else if (result.isDenied) {
+          triggerReceiptUploadForOrder(ord.id);
+        }
+      });
+    }
+  };
+
+  const triggerReceiptUploadForOrder = (orderId) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      Swal.fire({
+        title: 'Mengunggah Foto Bukti...',
+        text: 'Sedang menyimpan bukti transfer ke sistem...',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+      });
+
+      try {
+        // Read file preview (base64)
+        const reader = new FileReader();
+        const previewPromise = new Promise((resolve) => {
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = () => resolve('');
+          reader.readAsDataURL(file);
+        });
+        const previewDataUrl = await previewPromise;
+
+        // Try Upload to Storage
+        let downloadUrl = '';
+        try {
+          const safeName = (file.name || 'bukti.jpg').replace(/[^a-zA-Z0-9.-]/g, '_');
+          const storageRef = ref(storage, `orders/receipts/${orderId}_${safeName}`);
+          const res = await uploadBytes(storageRef, file);
+          downloadUrl = await getDownloadURL(res.ref);
+        } catch (uploadErr) {
+          console.warn('Storage upload notice, saving base64 to Firestore:', uploadErr);
+        }
+
+        // Save to Firestore with both URL and base64 preview
+        await setDoc(doc(db, 'orders', orderId), {
+          receipt_url: downloadUrl || '',
+          receipt_preview: previewDataUrl || '',
+          receipt_name: file.name,
+          has_receipt: true
+        }, { merge: true });
+
+        // Update local state
+        setOrders((prev) => {
+          const updated = prev.map((o) => o.id === orderId ? {
+            ...o,
+            receipt_url: downloadUrl || '',
+            receipt_preview: previewDataUrl || '',
+            receipt_name: file.name,
+            has_receipt: true
+          } : o);
+          try {
+            localStorage.setItem('digitalisasi_orders', JSON.stringify(updated));
+          } catch (err) {}
+          return updated;
+        });
+
+        Swal.fire({
+          title: 'Berhasil Disimpan!',
+          text: 'Foto bukti transfer berhasil diunggah dan kini dapat dibuka kapan saja.',
+          icon: 'success',
+          confirmButtonColor: '#B8860B'
+        });
+      } catch (err) {
+        console.error('Gagal mengunggah:', err);
+        Swal.fire('Gagal Mengunggah', 'Terjadi kesalahan saat mengunggah foto. Silakan coba lagi.', 'error');
+      }
+    };
+    input.click();
+  };
+
   const handleDeleteOrder = async (orderId) => {
     const res = await Swal.fire({
       title: 'Hapus Pesanan?',
@@ -3235,27 +3379,22 @@ export default function DevDashboard() {
                         )}
 
                         {(ord.receipt_url || ord.receipt_preview || ord.receipt_name || ord.has_receipt) && (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', color: '#346538', marginTop: '0.2rem', fontWeight: 600 }}>
-                            <CheckCircle size={14} weight="bold" />
-                            <span>Bukti QRIS: {ord.receipt_url ? (
-                              <a href={ord.receipt_url} target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'underline' }}>
-                                Lihat Foto Online
-                              </a>
-                            ) : ord.receipt_preview ? (
-                              <button
-                                type="button"
-                                onClick={() => Swal.fire({
-                                  title: 'Bukti Pembayaran QRIS',
-                                  text: `${ord.couple_name} - ${ord.receipt_name || 'Bukti Transfer'}`,
-                                  imageUrl: ord.receipt_preview,
-                                  imageAlt: 'Bukti Pembayaran',
-                                  confirmButtonColor: '#B8860B'
-                                })}
-                                style={{ background: 'none', border: 'none', color: '#1b4332', textDecoration: 'underline', cursor: 'pointer', padding: 0, font: 'inherit', fontWeight: 700 }}
-                              >
-                                Lihat Foto ({ord.receipt_name || 'Lampiran'})
-                              </button>
-                            ) : (ord.receipt_name || 'Sudah dilampirkan via WA')}</span>
+                          <div className="dev-order-receipt-wrap">
+                            <button
+                              type="button"
+                              className={`dev-order-receipt-btn ${(ord.receipt_url || ord.receipt_preview) ? 'has-image' : 'no-image'}`}
+                              onClick={() => handleViewReceipt(ord)}
+                              title="Klik untuk membuka bukti transfer QRIS"
+                            >
+                              <CheckCircle size={15} weight="bold" className="receipt-icon-check" />
+                              <span className="receipt-label">
+                                Bukti QRIS: <strong>{ord.receipt_name || 'Lihat Bukti Foto'}</strong>
+                              </span>
+                              <span className="receipt-action-badge">
+                                <Eye size={13} weight="bold" />
+                                <span>{(ord.receipt_url || ord.receipt_preview) ? 'Buka Foto' : 'Info Bukti'}</span>
+                              </span>
+                            </button>
                           </div>
                         )}
 

@@ -865,7 +865,7 @@ export default function LandingPage() {
       receiptThumb = receiptPreview || '';
     }
 
-    // 2. Unggah ke Firebase Storage dengan timeout 2.5 detik (mencegah hang/CORS retry freeze pada browser)
+    // 2. Unggah ke Firebase Storage dengan timeout 6 detik
     try {
       const safeName = (receiptFile.name || 'bukti.jpg').replace(/[^a-zA-Z0-9.-]/g, '_');
       const storageRef = ref(storage, `orders/receipts/${createdOrderId || Date.now()}_${safeName}`);
@@ -876,7 +876,7 @@ export default function LandingPage() {
       })();
 
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Firebase Storage timeout/CORS')), 2500)
+        setTimeout(() => reject(new Error('Firebase Storage timeout/CORS')), 6000)
       );
 
       receiptUrl = await Promise.race([uploadPromise, timeoutPromise]);
@@ -893,7 +893,7 @@ export default function LandingPage() {
           return {
             ...o,
             status: 'pending',
-            receipt_url: receiptUrl,
+            receipt_url: receiptUrl || '',
             receipt_name: receiptFile.name || '',
             receipt_preview: receiptThumb || '',
             has_receipt: true
@@ -912,11 +912,12 @@ export default function LandingPage() {
         await Promise.race([
           setDoc(doc(db, 'orders', createdOrderId), {
             status: 'pending',
-            receipt_url: receiptUrl,
+            receipt_url: receiptUrl || '',
+            receipt_preview: receiptThumb || '',
             receipt_name: receiptFile.name || '',
             has_receipt: true
           }, { merge: true }),
-          new Promise((resolve) => setTimeout(resolve, 1500))
+          new Promise((resolve) => setTimeout(resolve, 5000))
         ]);
       }
     } catch (err) {
