@@ -22,6 +22,52 @@ import './LandingPage.css';
 
 export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [activePackageIndex, setActivePackageIndex] = useState(1);
+  const pricingGridRef = React.useRef(null);
+
+  const scrollToPackage = (idx) => {
+    setActivePackageIndex(idx);
+    if (pricingGridRef.current) {
+      const cards = pricingGridRef.current.children;
+      if (cards && cards[idx]) {
+        cards[idx].scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      }
+    }
+  };
+
+  const handlePricingScroll = () => {
+    if (!pricingGridRef.current) return;
+    const container = pricingGridRef.current;
+    const cards = container.children;
+    if (!cards || cards.length === 0) return;
+
+    const containerCenter = container.scrollLeft + container.offsetWidth / 2;
+    let closestIndex = 0;
+    let minDistance = Infinity;
+
+    for (let i = 0; i < cards.length; i++) {
+      const card = cards[i];
+      const cardCenter = card.offsetLeft + card.offsetWidth / 2;
+      const distance = Math.abs(containerCenter - cardCenter);
+      if (distance < minDistance) {
+        minDistance = distance;
+        closestIndex = i;
+      }
+    }
+
+    if (closestIndex !== activePackageIndex) {
+      setActivePackageIndex(closestIndex);
+    }
+  };
+
+  React.useEffect(() => {
+    if (window.innerWidth <= 768 && pricingGridRef.current) {
+      const timer = setTimeout(() => {
+        scrollToPackage(1);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, []);
 
   return (
     <ThreeScene>
@@ -220,9 +266,44 @@ export default function LandingPage() {
             <span className="lp-section-pill">PILIHAN PAKET</span>
             <h2 className="lp-section-title">Investasi untuk Hari Bahagia Anda</h2>
             <p className="lp-section-sub">Pilih paket terbaik yang sesuai dengan konsep dan skala acara pernikahan Anda:</p>
+            
+            {/* Mobile Package Tab Selector */}
+            <div className="lp-pricing-mobile-nav" role="tablist" aria-label="Pilihan Paket Undangan">
+              <button 
+                type="button" 
+                role="tab" 
+                aria-selected={activePackageIndex === 0}
+                className={`lp-pkg-tab ${activePackageIndex === 0 ? 'is-active' : ''}`}
+                onClick={() => scrollToPackage(0)}
+              >
+                Silver
+              </button>
+              <button 
+                type="button" 
+                role="tab" 
+                aria-selected={activePackageIndex === 1}
+                className={`lp-pkg-tab ${activePackageIndex === 1 ? 'is-active' : ''}`}
+                onClick={() => scrollToPackage(1)}
+              >
+                Gold Imperial
+              </button>
+              <button 
+                type="button" 
+                role="tab" 
+                aria-selected={activePackageIndex === 2}
+                className={`lp-pkg-tab ${activePackageIndex === 2 ? 'is-active' : ''}`}
+                onClick={() => scrollToPackage(2)}
+              >
+                Platinum
+              </button>
+            </div>
           </div>
 
-          <div className="lp-pricing-grid">
+          <div 
+            className="lp-pricing-grid" 
+            ref={pricingGridRef} 
+            onScroll={handlePricingScroll}
+          >
             {/* Paket Silver */}
             <div className="lp-price-card">
               <div className="lp-price-header">
@@ -300,6 +381,19 @@ export default function LandingPage() {
                 Pilih Paket Royal Platinum
               </a>
             </div>
+          </div>
+
+          {/* Mobile Pricing Dot Indicators */}
+          <div className="lp-pricing-dots-mobile" aria-hidden="true">
+            {[0, 1, 2].map((idx) => (
+              <button
+                key={idx}
+                type="button"
+                className={`lp-pricing-dot ${activePackageIndex === idx ? 'is-active' : ''}`}
+                onClick={() => scrollToPackage(idx)}
+                aria-label={`Lihat paket ${idx + 1}`}
+              />
+            ))}
           </div>
         </section>
 
