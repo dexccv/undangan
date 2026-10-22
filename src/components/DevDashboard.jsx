@@ -3203,13 +3203,27 @@ export default function DevDashboard() {
                           </div>
                         )}
 
-                        {(ord.receipt_url || ord.receipt_name || ord.has_receipt) && (
+                        {(ord.receipt_url || ord.receipt_preview || ord.receipt_name || ord.has_receipt) && (
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', color: '#346538', marginTop: '0.2rem', fontWeight: 600 }}>
                             <CheckCircle size={14} weight="bold" />
                             <span>Bukti QRIS: {ord.receipt_url ? (
                               <a href={ord.receipt_url} target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'underline' }}>
-                                Lihat Foto
+                                Lihat Foto Online
                               </a>
+                            ) : ord.receipt_preview ? (
+                              <button
+                                type="button"
+                                onClick={() => Swal.fire({
+                                  title: 'Bukti Pembayaran QRIS',
+                                  text: `${ord.couple_name} - ${ord.receipt_name || 'Bukti Transfer'}`,
+                                  imageUrl: ord.receipt_preview,
+                                  imageAlt: 'Bukti Pembayaran',
+                                  confirmButtonColor: '#B8860B'
+                                })}
+                                style={{ background: 'none', border: 'none', color: '#1b4332', textDecoration: 'underline', cursor: 'pointer', padding: 0, font: 'inherit', fontWeight: 700 }}
+                              >
+                                Lihat Foto ({ord.receipt_name || 'Lampiran'})
+                              </button>
                             ) : (ord.receipt_name || 'Sudah dilampirkan via WA')}</span>
                           </div>
                         )}

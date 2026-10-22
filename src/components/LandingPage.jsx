@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { db, storage } from '../firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, setDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import Swal from 'sweetalert2';
 import {
@@ -321,9 +321,53 @@ export default function LandingPage() {
     setOrderStep('payment');
   };
 
+  const compressReceiptImage = (file, maxWidth = 800, quality = 0.7) => {
+    return new Promise((resolve) => {
+      try {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            try {
+              const canvas = document.createElement('canvas');
+              let width = img.width;
+              let height = img.height;
+              if (width > maxWidth) {
+                height = Math.round((height * maxWidth) / width);
+                width = maxWidth;
+              }
+              canvas.width = width;
+              canvas.height = height;
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(img, 0, 0, width, height);
+              resolve(canvas.toDataURL('image/jpeg', quality));
+            } catch (canvasErr) {
+              resolve(e.target.result || '');
+            }
+          };
+          img.onerror = () => resolve(e.target.result || '');
+          img.src = e.target.result;
+        };
+        reader.onerror = () => resolve('');
+        reader.readAsDataURL(file);
+      } catch (err) {
+        resolve('');
+      }
+    });
+  };
+
   const handleReceiptChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (file.size > 15 * 1024 * 1024) {
+      Swal.fire({
+        title: 'Ukuran Terlalu Besar',
+        text: 'Maksimal ukuran berkas bukti transfer adalah 15 MB.',
+        icon: 'warning',
+        confirmButtonColor: '#B8860B'
+      });
+      return;
+    }
     setReceiptFile(file);
     const reader = new FileReader();
     reader.onload = () => {
@@ -338,20 +382,50 @@ export default function LandingPage() {
   };
 
   const handleFinalConfirmPayment = async () => {
-    setIsUploadingReceipt(true);
-    let receiptUrl = '';
-
-    if (receiptFile) {
-      try {
-        const storageRef = ref(storage, `orders/receipts/${createdOrderId || Date.now()}_${receiptFile.name}`);
-        const uploadRes = await uploadBytes(storageRef, receiptFile);
-        receiptUrl = await getDownloadURL(uploadRes.ref);
-      } catch (err) {
-        console.warn('Storage receipt upload fallback:', err);
-      }
+    // 1. Validasi WAJIB: Cegah lanjut jika bukti transfer belum diunggah
+    if (!receiptFile) {
+      Swal.fire({
+        title: 'Bukti Pembayaran Diperlukan',
+        text: 'Silakan pilih dan lampirkan foto/screenshot bukti transfer terlebih dahulu sebelum melanjutkan.',
+        icon: 'warning',
+        confirmButtonColor: '#B8860B',
+        confirmButtonText: 'Pilih Bukti Transfer'
+      });
+      return;
     }
 
-    // Update status di localStorage & memory
+    setIsUploadingReceipt(true);
+    let receiptUrl = '';
+    let receiptThumb = '';
+
+    // Siapkan thumbnail terkompresi untuk penyimpanan lokal instan
+    try {
+      receiptThumb = await compressReceiptImage(receiptFile, 800, 0.7);
+    } catch (e) {
+      receiptThumb = receiptPreview || '';
+    }
+
+    // 2. Unggah ke Firebase Storage dengan timeout 2.5 detik (mencegah hang/CORS retry freeze pada browser)
+    try {
+      const safeName = (receiptFile.name || 'bukti.jpg').replace(/[^a-zA-Z0-9.-]/g, '_');
+      const storageRef = ref(storage, `orders/receipts/${createdOrderId || Date.now()}_${safeName}`);
+      
+      const uploadPromise = (async () => {
+        const uploadRes = await uploadBytes(storageRef, receiptFile);
+        return await getDownloadURL(uploadRes.ref);
+      })();
+
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Firebase Storage timeout/CORS')), 2500)
+      );
+
+      receiptUrl = await Promise.race([uploadPromise, timeoutPromise]);
+    } catch (err) {
+      console.warn('Firebase Storage upload fallback (CORS / network):', err);
+      receiptUrl = '';
+    }
+
+    // 3. Update status & bukti di localStorage agar tersimpan di antrean DevDashboard
     try {
       const localOrders = JSON.parse(localStorage.getItem('digitalisasi_orders') || '[]');
       const updated = localOrders.map((o) => {
@@ -360,21 +434,41 @@ export default function LandingPage() {
             ...o,
             status: 'pending',
             receipt_url: receiptUrl,
-            receipt_name: receiptFile?.name || '',
-            has_receipt: Boolean(receiptFile)
+            receipt_name: receiptFile.name || '',
+            receipt_preview: receiptThumb || '',
+            has_receipt: true
           };
         }
         return o;
       });
       localStorage.setItem('digitalisasi_orders', JSON.stringify(updated));
-    } catch (e) {}
+    } catch (e) {
+      console.warn('LocalStorage order update notice:', e);
+    }
 
+    // 4. Update di Firestore orders jika permissions mengizinkan
+    try {
+      if (createdOrderId) {
+        await Promise.race([
+          setDoc(doc(db, 'orders', createdOrderId), {
+            status: 'pending',
+            receipt_url: receiptUrl,
+            receipt_name: receiptFile.name || '',
+            has_receipt: true
+          }, { merge: true }),
+          new Promise((resolve) => setTimeout(resolve, 1500))
+        ]);
+      }
+    } catch (err) {
+      console.warn('Firestore orders update notice (rules/offline):', err);
+    }
+
+    // 5. Susun format pesan WhatsApp ke Developer: 081225589199
     const finalWanita = orderWanitaPanggilan.trim();
     const finalPria = orderPriaPanggilan.trim();
     const finalPhone = orderPhone.trim();
     const finalSlug = (orderSlug.trim() || `${finalWanita}-${finalPria}`).toLowerCase().replace(/[^a-z0-9-]+/g, '-');
 
-    // Format WhatsApp Message resmi ke developer: 081225589199
     const waLines = [
       `Halo Developer Digitalisasi.id (081225589199), saya telah melakukan pemesanan dan pembayaran via QRIS:`,
       ``,
@@ -395,26 +489,45 @@ export default function LandingPage() {
       orderEventLocation.trim() ? `*Lokasi Acara:* ${orderEventLocation.trim()}` : null,
       orderNotes.trim() ? `*Catatan Tambahan:* ${orderNotes.trim()}` : null,
       ``,
-      `*Status Pembayaran:* Telah melakukan transfer via QRIS ${receiptFile ? `(Bukti transfer: ${receiptFile.name})` : '(Menyertakan bukti transfer)'}`,
-      receiptUrl ? `*Link Bukti:* ${receiptUrl}` : null,
+      `*Status Pembayaran:* Telah melakukan transfer QRIS`,
+      `*File Bukti:* ${receiptFile.name} (${(receiptFile.size / 1024).toFixed(1)} KB)`,
+      receiptUrl ? `*Link Bukti:* ${receiptUrl}` : `*(Foto bukti transfer dilampirkan langsung di chat WA ini)*`,
       ``,
       `Mohon segera diproses pembuatan undangan digital kami. Terima kasih!`
     ].filter((line) => line !== null).join('\n');
 
     const waUrl = `https://wa.me/6281225589199?text=${encodeURIComponent(waLines)}`;
 
-    await Swal.fire({
-      title: 'Pesanan & Pembayaran Dikonfirmasi!',
-      text: 'Data Anda telah tersimpan dan sedang diteruskan ke WhatsApp Developer (081225589199).',
-      icon: 'success',
-      confirmButtonColor: '#B8860B',
-      confirmButtonText: 'Buka WhatsApp Developer'
-    });
-
-    window.open(waUrl, '_blank', 'noopener,noreferrer');
-    setIsUploadingReceipt(false);
-    setIsOrderModalOpen(false);
-    setOrderStep('form');
+    try {
+      await Swal.fire({
+        title: 'Pesanan & Bukti Pembayaran Diterima!',
+        html: `
+          <div style="font-size: 0.95rem; line-height: 1.5; color: #444; text-align: left;">
+            <p style="margin-bottom: 0.6rem;">Data pesanan untuk <strong>${finalWanita} & ${finalPria}</strong> dan bukti transfer <strong>${receiptFile.name}</strong> telah dicatat ke antrean sistem.</p>
+            <div style="margin-top: 0.8rem; padding: 0.75rem 0.9rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; color: #166534; font-size: 0.88rem;">
+              Silakan klik tombol di bawah untuk membuka WhatsApp Developer (<strong>081225589199</strong>) dan kirimkan juga foto bukti transfer tersebut di chat agar langsung diverifikasi &amp; dibuatkan undangannya.
+            </div>
+          </div>
+        `,
+        icon: 'success',
+        confirmButtonColor: '#16a34a',
+        confirmButtonText: 'Buka WhatsApp Developer',
+        showCancelButton: true,
+        cancelButtonText: 'Tutup'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          window.open(waUrl, '_blank', 'noopener,noreferrer');
+        }
+      });
+    } catch (swalErr) {
+      window.open(waUrl, '_blank', 'noopener,noreferrer');
+    } finally {
+      setIsUploadingReceipt(false);
+      setIsOrderModalOpen(false);
+      setOrderStep('form');
+      setReceiptFile(null);
+      setReceiptPreview(null);
+    }
   };
 
   return (
@@ -1165,14 +1278,14 @@ export default function LandingPage() {
                   {/* Bagian Unggah Bukti Pembayaran */}
                   <div className="lp-upload-receipt-section">
                     <label className="lp-upload-receipt-heading">
-                      <span>Unggah Bukti Pembayaran / Transfer</span>
-                      <span className="lp-label-optional">(Disarankan)</span>
+                      <span>Unggah Bukti Pembayaran / Transfer <strong style={{ color: '#dc2626' }}>*</strong></span>
+                      <span className="lp-label-required" style={{ color: '#dc2626', fontWeight: 600 }}>(Wajib Dilampirkan)</span>
                     </label>
 
                     <div className="lp-upload-receipt-area">
-                      <label className="lp-upload-file-picker">
+                      <label className={`lp-upload-file-picker ${receiptFile ? 'is-selected' : ''}`}>
                         <UploadSimple size={22} weight="bold" />
-                        <span>{receiptFile ? receiptFile.name : 'Pilih Foto Bukti Transfer / Screenshot Pembayaran'}</span>
+                        <span>{receiptFile ? `File Dipilih: ${receiptFile.name}` : 'Pilih Foto Bukti Transfer / Screenshot Pembayaran *'}</span>
                         <input
                           type="file"
                           accept="image/*"
@@ -1180,7 +1293,7 @@ export default function LandingPage() {
                           className="sr-only"
                         />
                       </label>
-                      <small className="lp-upload-hint">Format file JPG, PNG, atau tangkapan layar (screenshot transfer bank / e-wallet).</small>
+                      <small className="lp-upload-hint">Format file JPG, PNG, atau tangkapan layar (screenshot transfer bank / e-wallet). Maks 15MB.</small>
                     </div>
 
                     {receiptPreview && (
@@ -1211,12 +1324,12 @@ export default function LandingPage() {
                     </button>
                     <button 
                       type="button" 
-                      className="lp-btn lp-btn-proceed lp-order-submit-btn"
+                      className={`lp-btn lp-btn-proceed lp-order-submit-btn ${!receiptFile ? 'lp-btn-needs-receipt' : ''}`}
                       onClick={handleFinalConfirmPayment}
                       disabled={isUploadingReceipt}
                     >
                       <WhatsappLogo size={18} weight="fill" />
-                      <span>{isUploadingReceipt ? 'Mengunggah & Mengirim...' : 'Kirim Bukti ke WhatsApp (081225589199)'}</span>
+                      <span>{isUploadingReceipt ? 'Memproses & Menyiapkan WhatsApp...' : 'Kirim Bukti ke WhatsApp (081225589199)'}</span>
                     </button>
                   </div>
                 </div>

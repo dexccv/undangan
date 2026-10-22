@@ -1614,6 +1614,24 @@ a.lp-btn-primary:hover {
   background: #FFFDF9;
 }
 
+.lp-upload-file-picker.is-selected {
+  border-color: #16a34a;
+  background: #f0fdf4;
+  color: #166534;
+  box-shadow: 0 0 0 1px #86efac;
+}
+
+.lp-label-required {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #dc2626;
+  letter-spacing: 0.02em;
+}
+
+.lp-btn-needs-receipt {
+  opacity: 0.92;
+}
+
 .lp-upload-hint {
   font-size: 0.76rem;
   color: var(--lp-text-light);
