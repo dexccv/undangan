@@ -55,7 +55,8 @@ import {
   ChatTeardropText,
   FlowerLotus,
   MusicNotes,
-  List
+  List,
+  UploadSimple
 } from '@phosphor-icons/react';
 import * as XLSX from 'xlsx';
 import Swal from 'sweetalert2';
@@ -155,6 +156,7 @@ export default function DevDashboard() {
       an_pria: 'Agus Pratama',
 
       quote_text: 'Dan di antara tanda-tanda (kebesaran)-Nya ialah Dia menciptakan pasangan-pasangan untukmu dari jenismu sendiri...',
+      quote_teks: 'Dan di antara tanda-tanda (kebesaran)-Nya ialah Dia menciptakan pasangan-pasangan untukmu dari jenismu sendiri...',
       quote_source: 'QS. Ar-Rum: 21',
       quote_sekunder: '',
       quote_sekunder_source: '',
@@ -436,26 +438,27 @@ export default function DevDashboard() {
     const newInvitationData = {
       ...initial,
       id: slug,
-      wanita_panggilan: bride,
+      wanita_panggilan: bride || 'Nadia',
       wanita_lengkap: order.wanita_lengkap || `${bride} Salsabila`,
-      wanita_ortu: order.wanita_ortu || initial.wanita_ortu,
-      wanita_ig: order.wanita_ig || initial.wanita_ig,
+      wanita_ortu: order.wanita_ortu || initial.wanita_ortu || '',
+      wanita_ig: order.wanita_ig || initial.wanita_ig || '',
 
-      pria_panggilan: groom,
+      pria_panggilan: groom || 'Agus',
       pria_lengkap: order.pria_lengkap || `${groom} Pratama`,
-      pria_ortu: order.pria_ortu || initial.pria_ortu,
-      pria_ig: order.pria_ig || initial.pria_ig,
+      pria_ortu: order.pria_ortu || initial.pria_ortu || '',
+      pria_ig: order.pria_ig || initial.pria_ig || '',
 
-      quote_teks: order.kutipan_doa || initial.quote_teks,
-      lokasi_akad: order.event_location || initial.lokasi_akad,
-      lokasi_resepsi: order.event_location || initial.lokasi_resepsi,
+      quote_text: order.kutipan_doa || initial.quote_text || '',
+      quote_teks: order.kutipan_doa || initial.quote_teks || initial.quote_text || '',
+      lokasi_akad: order.event_location || initial.lokasi_akad || '',
+      lokasi_resepsi: order.event_location || initial.lokasi_resepsi || '',
       judul_lagu: order.song_title || initial.judul_lagu || 'Payung Teduh - Akad',
 
-      tanggal_cover: formattedDate || initial.tanggal_cover,
+      tanggal_cover: formattedDate || initial.tanggal_cover || '',
       tanggal_akad: order.event_date ? `${order.event_date}T08:00:00` : initial.tanggal_akad,
-      tanggal_lengkap_akad: formattedDate || initial.tanggal_lengkap_akad,
+      tanggal_lengkap_akad: formattedDate || initial.tanggal_lengkap_akad || '',
       tanggal_resepsi: order.event_date ? `${order.event_date}T11:00:00` : initial.tanggal_resepsi,
-      tanggal_lengkap_resepsi: formattedDate || initial.tanggal_lengkap_resepsi,
+      tanggal_lengkap_resepsi: formattedDate || initial.tanggal_lengkap_resepsi || '',
       penerima_kado: `${bride} (${order.customer_phone || ''})`,
       paket_pesanan: order.package_name || 'Paket Gold Imperial'
     };
@@ -803,11 +806,32 @@ export default function DevDashboard() {
     setIsSaving(true);
     try {
       const coupleRef = doc(db, 'couples', formData.id.trim().toLowerCase());
-      await setDoc(coupleRef, {
+      
+      const sanitizeFirestoreData = (val) => {
+        if (val === undefined || val === null) return null;
+        if (Array.isArray(val)) return val.map(sanitizeFirestoreData);
+        if (val instanceof Date) return val;
+        if (typeof val === 'object') {
+          const cleanObj = {};
+          for (const [k, v] of Object.entries(val)) {
+            if (v !== undefined) {
+              cleanObj[k] = sanitizeFirestoreData(v);
+            }
+          }
+          return cleanObj;
+        }
+        return val;
+      };
+
+      const payload = sanitizeFirestoreData({
         ...formData,
+        quote_text: formData.quote_text || formData.quote_teks || '',
+        quote_teks: formData.quote_teks || formData.quote_text || '',
         id: formData.id.trim().toLowerCase(),
         updated_at: new Date()
-      }, { merge: true });
+      });
+
+      await setDoc(coupleRef, payload, { merge: true });
 
       Swal.fire({
         title: 'Perubahan Tersimpan',
@@ -2176,14 +2200,14 @@ export default function DevDashboard() {
                         type="text"
                         value={testGuestName}
                         onChange={(e) => setTestGuestName(e.target.value)}
-                        className="dev-field dev-field-sm"
-                        style={{ width: '180px' }}
+                        className="dev-field dev-field-sm preview-guest-input"
+                        placeholder="Nama tamu..."
                       />
                       <a
                         href={`/?id=${formData.id || 'demo'}&to=${encodeURIComponent(testGuestName)}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="dev-btn-secondary"
+                        className="dev-btn-secondary preview-open-btn"
                       >
                         <Eye size={16} weight="bold" />
                         <span>Buka Tab Baru</span>
@@ -2193,6 +2217,7 @@ export default function DevDashboard() {
 
                   <div className="preview-viewport-wrapper">
                     <div className={`preview-frame-container frame-${previewDevice}`}>
+                      {previewDevice === 'mobile' && <div className="preview-device-notch" aria-hidden="true" />}
                       <iframe
                         src={`/?id=${formData.id || 'demo'}&to=${encodeURIComponent(testGuestName)}`}
                         title="Pratinjau Undangan"
