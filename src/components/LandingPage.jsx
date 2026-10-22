@@ -124,29 +124,35 @@ export default function LandingPage() {
     }
   };
 
+  const pricingScrollTimeoutRef = React.useRef(null);
   const handlePricingScroll = () => {
     if (!pricingGridRef.current) return;
-    const container = pricingGridRef.current;
-    const cards = container.children;
-    if (!cards || cards.length === 0) return;
+    if (pricingScrollTimeoutRef.current) clearTimeout(pricingScrollTimeoutRef.current);
 
-    const containerCenter = container.scrollLeft + container.offsetWidth / 2;
-    let closestIndex = 0;
-    let minDistance = Infinity;
+    pricingScrollTimeoutRef.current = setTimeout(() => {
+      const container = pricingGridRef.current;
+      if (!container) return;
+      const cards = container.children;
+      if (!cards || cards.length === 0) return;
 
-    for (let i = 0; i < cards.length; i++) {
-      const card = cards[i];
-      const cardCenter = card.offsetLeft + card.offsetWidth / 2;
-      const distance = Math.abs(containerCenter - cardCenter);
-      if (distance < minDistance) {
-        minDistance = distance;
-        closestIndex = i;
+      const containerCenter = container.scrollLeft + container.offsetWidth / 2;
+      let closestIndex = 0;
+      let minDistance = Infinity;
+
+      for (let i = 0; i < cards.length; i++) {
+        const card = cards[i];
+        const cardCenter = card.offsetLeft + card.offsetWidth / 2;
+        const distance = Math.abs(containerCenter - cardCenter);
+        if (distance < minDistance) {
+          minDistance = distance;
+          closestIndex = i;
+        }
       }
-    }
 
-    if (closestIndex !== activePackageIndex) {
-      setActivePackageIndex(closestIndex);
-    }
+      if (closestIndex !== activePackageIndex) {
+        setActivePackageIndex(closestIndex);
+      }
+    }, 60);
   };
 
   React.useEffect(() => {
@@ -171,24 +177,38 @@ export default function LandingPage() {
     }
   }, []);
 
-  // Kunci scroll body saat sidebar mobile terbuka & tutup via tombol Escape
+  // Kunci scroll halaman belakang saat formulir pemesanan, modal peta, atau menu mobile terbuka
   React.useEffect(() => {
-    if (mobileMenuOpen) {
+    const isAnyModalOpen = mobileMenuOpen || isOrderModalOpen || isMapModalOpen;
+    if (isAnyModalOpen) {
       document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+      document.body.style.touchAction = 'none';
     } else {
       document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+      document.body.style.touchAction = '';
     }
+
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && mobileMenuOpen) {
-        setMobileMenuOpen(false);
+      if (e.key === 'Escape') {
+        if (isMapModalOpen) {
+          setIsMapModalOpen(false);
+        } else if (isOrderModalOpen) {
+          setIsOrderModalOpen(false);
+        } else if (mobileMenuOpen) {
+          setMobileMenuOpen(false);
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => {
       document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+      document.body.style.touchAction = '';
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [mobileMenuOpen]);
+  }, [mobileMenuOpen, isOrderModalOpen, isMapModalOpen]);
 
   // Smooth Scroll Reveal via IntersectionObserver
   React.useEffect(() => {
@@ -1809,17 +1829,17 @@ export default function LandingPage() {
 
         {/* MODAL PICKER PETA INTERAKTIF (GOOGLE MAPS / OPENSTREETMAP STYLE) */}
         {isMapModalOpen && (
-          <div className="lp-order-modal-backdrop lp-map-modal-backdrop" onClick={() => setIsMapModalOpen(false)}>
-            <div className="lp-order-modal-dialog lp-map-modal-dialog" onClick={(e) => e.stopPropagation()}>
-              <div className="lp-order-modal-header">
+          <div className="lp-map-modal-backdrop" onClick={() => setIsMapModalOpen(false)}>
+            <div className="lp-order-modal-card lp-map-modal-card" onClick={(e) => e.stopPropagation()}>
+              <div className="lp-map-modal-header">
                 <div>
-                  <h3 className="lp-order-modal-title">Pilih Titik Lokasi Acara di Peta (Khusus Indonesia)</h3>
-                  <p className="lp-order-modal-subtitle">Cari atau klik pada peta di seluruh wilayah Indonesia untuk menentukan titik koordinat yang presisi</p>
+                  <h3 className="lp-map-modal-title">Pilih Titik Lokasi Acara di Peta (Khusus Indonesia)</h3>
+                  <p className="lp-map-modal-subtitle">Cari atau klik pada peta di seluruh wilayah Indonesia untuk menentukan titik koordinat yang presisi</p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setIsMapModalOpen(false)}
-                  className="lp-order-modal-close"
+                  className="lp-map-modal-close"
                   aria-label="Tutup Peta"
                 >
                   <X size={20} weight="bold" />
@@ -1870,7 +1890,7 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              <div className="lp-order-modal-actions">
+              <div className="lp-order-modal-actions lp-map-modal-actions">
                 <button
                   type="button"
                   className="lp-btn lp-btn-cancel"

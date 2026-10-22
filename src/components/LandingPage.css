@@ -1168,24 +1168,29 @@ a.lp-btn-primary:hover {
     display: flex !important;
     flex-wrap: nowrap !important;
     overflow-x: auto !important;
-    scroll-snap-type: x mandatory;
+    overflow-y: hidden !important;
+    scroll-snap-type: x proximity !important; /* proximity prevents aggressive bouncing and allows natural swipe */
     gap: 1.25rem !important;
-    padding: 1.5rem 7.5% !important;
+    padding: 1.5rem 5% !important;
     margin: 0 !important;
-    scroll-padding: 0 7.5%;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
+    scroll-padding: 0 5% !important;
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior-x: contain !important;
+    overscroll-behavior-y: auto !important;
+    touch-action: pan-x pan-y !important;
+    scrollbar-width: none !important;
     max-width: none !important;
-    align-items: stretch;
+    align-items: stretch !important;
   }
   .lp-pricing-grid::-webkit-scrollbar {
     display: none;
   }
   .lp-price-card {
-    flex: 0 0 85vw !important;
-    max-width: 350px !important;
-    min-width: 280px !important;
-    scroll-snap-align: center;
+    flex: 0 0 84vw !important;
+    max-width: 340px !important;
+    min-width: 270px !important;
+    scroll-snap-align: center !important;
+    scroll-snap-stop: normal !important;
     padding: 2.25rem 1.6rem !important;
     border-radius: 22px;
     height: auto;
@@ -1290,6 +1295,8 @@ a.lp-btn-primary:hover {
   justify-content: center;
   padding: 1.25rem;
   animation: modalFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+  overscroll-behavior: contain !important;
+  touch-action: pan-y !important;
 }
 
 @keyframes modalFadeIn {
@@ -1308,6 +1315,7 @@ a.lp-btn-primary:hover {
   box-shadow: 0 20px 60px rgba(28, 24, 20, 0.22), 0 0 0 1px rgba(255, 255, 255, 0.8) inset;
   padding: 2.25rem;
   animation: modalSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  overscroll-behavior: contain !important;
 }
 
 @keyframes modalSlideUp {
@@ -1936,17 +1944,93 @@ html {
   font-weight: 700;
 }
 
-/* Map Picker Modal */
-.lp-map-modal-dialog {
+/* ========================================================
+   MODAL PICKER PETA INTERAKTIF
+   ======================================================== */
+.lp-map-modal-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  background: rgba(12, 10, 7, 0.85) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  z-index: 10000 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 1rem !important;
+  animation: modalFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+  overscroll-behavior: contain !important;
+  touch-action: pan-y !important;
+}
+
+.lp-map-modal-card {
+  width: 100% !important;
   max-width: 720px !important;
-  width: 95% !important;
+  max-height: 92vh !important;
+  background: #FFFFFF !important;
+  border-radius: 20px !important;
+  border: 1px solid rgba(184, 134, 11, 0.35) !important;
+  box-shadow: 0 25px 75px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.9) inset !important;
+  padding: 1.75rem !important;
+  overflow-y: auto !important;
+  position: relative !important;
+  z-index: 10001 !important;
+  animation: modalSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  overscroll-behavior: contain !important;
+  touch-action: pan-y !important;
+}
+
+.lp-map-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid #EAE6DE;
+  margin-bottom: 0.85rem;
+  gap: 1rem;
+}
+
+.lp-map-modal-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--lp-text);
+  margin: 0;
+  letter-spacing: -0.015em;
+}
+
+.lp-map-modal-subtitle {
+  font-size: 0.82rem;
+  color: var(--lp-text-light);
+  margin: 0.2rem 0 0;
+  line-height: 1.4;
+}
+
+.lp-map-modal-close {
+  background: #F4F1EA;
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--lp-text);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.lp-map-modal-close:hover {
+  background: #EAE6DE;
+  color: #000;
+  transform: rotate(90deg);
 }
 
 .lp-map-modal-body {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  margin: 1rem 0;
+  margin: 0.5rem 0 1rem;
 }
 
 .lp-map-search-bar {
@@ -1964,6 +2048,7 @@ html {
   font-family: inherit;
   outline: none;
   transition: border-color 0.2s;
+  background: #FFFFFF;
 }
 
 .lp-map-search-input:focus {
@@ -1972,11 +2057,13 @@ html {
 
 .lp-leaflet-map-frame {
   width: 100%;
-  height: 350px;
-  border-radius: 10px;
+  height: 320px;
+  border-radius: 12px;
   border: 1px solid #D5CEBF;
   background: #F3EFE6;
+  position: relative;
   z-index: 10;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
 .lp-map-resolved-box {
@@ -1985,7 +2072,7 @@ html {
   gap: 0.25rem;
   background: #FAF8F3;
   border: 1px solid #EAE6DE;
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 0.75rem 0.85rem;
 }
 
@@ -1999,7 +2086,7 @@ html {
 }
 
 .lp-map-resolved-text {
-  font-size: 0.84rem;
+  font-size: 0.85rem;
   color: var(--lp-text);
   line-height: 1.4;
   margin: 0;
@@ -2009,5 +2096,32 @@ html {
   font-size: 0.74rem;
   color: var(--lp-text-light);
   font-weight: 500;
+}
+
+.lp-map-modal-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #EAE6DE;
+}
+
+@media (max-width: 640px) {
+  .lp-map-modal-card {
+    padding: 1.15rem !important;
+    width: 96% !important;
+    max-height: 94vh !important;
+  }
+  .lp-leaflet-map-frame {
+    height: 250px !important;
+  }
+  .lp-map-modal-header {
+    margin-bottom: 0.65rem;
+    padding-bottom: 0.65rem;
+  }
+  .lp-map-modal-title {
+    font-size: 1rem;
+  }
 }
 
