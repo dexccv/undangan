@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { db } from '../firebase';
+import { db, storage } from '../firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import Swal from 'sweetalert2';
 import {
   Sparkle,
@@ -12,6 +13,7 @@ import {
   List,
   X,
   ArrowRight,
+  ArrowLeft,
   Eye,
   WhatsappLogo,
   FlowerLotus,
@@ -27,7 +29,10 @@ import {
   Globe,
   InstagramLogo,
   MapPin,
-  Quotes
+  Quotes,
+  UploadSimple,
+  QrCode,
+  Check
 } from '@phosphor-icons/react';
 import ThreeScene from './ThreeScene';
 import './LandingPage.css';
@@ -57,6 +62,9 @@ export default function LandingPage() {
   const [orderPriaOrtu, setOrderPriaOrtu] = useState('');
   const [orderPriaIg, setOrderPriaIg] = useState('');
 
+  // Musik & Lagu Latar
+  const [orderSongTitle, setOrderSongTitle] = useState('');
+
   // Acara, Doa & Catatan
   const [orderEventDate, setOrderEventDate] = useState('');
   const [orderEventLocation, setOrderEventLocation] = useState('');
@@ -65,6 +73,13 @@ export default function LandingPage() {
   );
   const [orderNotes, setOrderNotes] = useState('');
   const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
+
+  // Navigasi Langkah Modal & Pembayaran QRIS
+  const [orderStep, setOrderStep] = useState('form'); // 'form' | 'payment'
+  const [receiptFile, setReceiptFile] = useState(null);
+  const [receiptPreview, setReceiptPreview] = useState(null);
+  const [isUploadingReceipt, setIsUploadingReceipt] = useState(false);
+  const [createdOrderId, setCreatedOrderId] = useState(null);
 
   const scrollToPackage = (idx, smooth = true) => {
     setActivePackageIndex(idx);
@@ -164,6 +179,9 @@ export default function LandingPage() {
     }
     setOrderPackage(packageName);
     setOrderPrice(price || 'Rp 299.000');
+    setOrderStep('form');
+    setReceiptFile(null);
+    setReceiptPreview(null);
     setIsOrderModalOpen(true);
   };
 
@@ -194,7 +212,7 @@ export default function LandingPage() {
     setOrderSlug(val.toLowerCase().replace(/[^a-z0-9-]/g, ''));
   };
 
-  const handleOrderSubmit = async (e) => {
+  const handleProceedToPayment = async (e) => {
     e.preventDefault();
     const finalWanita = orderWanitaPanggilan.trim();
     const finalPria = orderPriaPanggilan.trim();
@@ -222,8 +240,11 @@ export default function LandingPage() {
     }
 
     setIsSubmittingOrder(true);
+    const orderId = 'ord-' + Date.now();
+    setCreatedOrderId(orderId);
+
     const newOrder = {
-      id: 'ord-' + Date.now(),
+      id: orderId,
       package_name: orderPackage,
       package_price: orderPrice,
       slug: finalSlug,
@@ -242,13 +263,16 @@ export default function LandingPage() {
       pria_ortu: orderPriaOrtu.trim(),
       pria_ig: orderPriaIg.trim(),
 
+      // Musik / Lagu
+      song_title: orderSongTitle.trim(),
+
       // Acara, Doa & Catatan
       event_date: orderEventDate || '',
       event_location: orderEventLocation.trim(),
       kutipan_doa: orderKutipanDoa.trim(),
       notes: orderNotes.trim(),
 
-      status: 'pending',
+      status: 'menunggu_pembayaran',
       created_at: { seconds: Math.floor(Date.now() / 1000) }
     };
 
@@ -269,9 +293,66 @@ export default function LandingPage() {
       console.warn('Firestore orders save warning (rules/offline):', err);
     }
 
-    // Format WhatsApp Message
+    setIsSubmittingOrder(false);
+    setOrderStep('payment');
+  };
+
+  const handleReceiptChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setReceiptFile(file);
+    const reader = new FileReader();
+    reader.onload = () => {
+      setReceiptPreview(reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveReceipt = () => {
+    setReceiptFile(null);
+    setReceiptPreview(null);
+  };
+
+  const handleFinalConfirmPayment = async () => {
+    setIsUploadingReceipt(true);
+    let receiptUrl = '';
+
+    if (receiptFile) {
+      try {
+        const storageRef = ref(storage, `orders/receipts/${createdOrderId || Date.now()}_${receiptFile.name}`);
+        const uploadRes = await uploadBytes(storageRef, receiptFile);
+        receiptUrl = await getDownloadURL(uploadRes.ref);
+      } catch (err) {
+        console.warn('Storage receipt upload fallback:', err);
+      }
+    }
+
+    // Update status di localStorage & memory
+    try {
+      const localOrders = JSON.parse(localStorage.getItem('digitalisasi_orders') || '[]');
+      const updated = localOrders.map((o) => {
+        if (o.id === createdOrderId) {
+          return {
+            ...o,
+            status: 'pending',
+            receipt_url: receiptUrl,
+            receipt_name: receiptFile?.name || '',
+            has_receipt: Boolean(receiptFile)
+          };
+        }
+        return o;
+      });
+      localStorage.setItem('digitalisasi_orders', JSON.stringify(updated));
+    } catch (e) {}
+
+    const finalWanita = orderWanitaPanggilan.trim();
+    const finalPria = orderPriaPanggilan.trim();
+    const finalPhone = orderPhone.trim();
+    const finalSlug = (orderSlug.trim() || `${finalWanita}-${finalPria}`).toLowerCase().replace(/[^a-z0-9-]+/g, '-');
+
+    // Format WhatsApp Message resmi ke developer: 081225589199
     const waLines = [
-      `Halo Admin Digitalisasi.id, saya ingin memesan undangan digital:`,
+      `Halo Developer Digitalisasi.id (081225589199), saya telah melakukan pemesanan dan pembayaran via QRIS:`,
       ``,
       `*Paket:* ${orderPackage} (${orderPrice})`,
       `*Nama Tautan Undangan:* domainanda.com/?id=${finalSlug}`,
@@ -285,26 +366,31 @@ export default function LandingPage() {
       orderPriaOrtu.trim() ? `*Orang Tua Pria:* ${orderPriaOrtu.trim()}` : null,
       orderPriaIg.trim() ? `*Instagram Pria:* ${orderPriaIg.trim()}` : null,
       ``,
+      orderSongTitle.trim() ? `*Lagu Pilihan:* ${orderSongTitle.trim()}` : null,
       orderEventDate ? `*Tanggal Acara:* ${orderEventDate}` : null,
       orderEventLocation.trim() ? `*Lokasi Acara:* ${orderEventLocation.trim()}` : null,
       orderNotes.trim() ? `*Catatan Tambahan:* ${orderNotes.trim()}` : null,
       ``,
-      `Mohon dibantu pembuatan draf undangannya. Terima kasih!`
+      `*Status Pembayaran:* Telah melakukan transfer via QRIS ${receiptFile ? `(Bukti transfer: ${receiptFile.name})` : '(Menyertakan bukti transfer)'}`,
+      receiptUrl ? `*Link Bukti:* ${receiptUrl}` : null,
+      ``,
+      `Mohon segera diproses pembuatan undangan digital kami. Terima kasih!`
     ].filter((line) => line !== null).join('\n');
 
     const waUrl = `https://wa.me/6281225589199?text=${encodeURIComponent(waLines)}`;
 
     await Swal.fire({
-      title: 'Pesanan Berhasil Dicatat!',
-      text: 'Data Anda telah tersimpan di sistem. Klik tombol di bawah untuk melanjutkan ke WhatsApp kami.',
+      title: 'Pesanan & Pembayaran Dikonfirmasi!',
+      text: 'Data Anda telah tersimpan dan sedang diteruskan ke WhatsApp Developer (081225589199).',
       icon: 'success',
       confirmButtonColor: '#B8860B',
-      confirmButtonText: 'Lanjut ke WhatsApp'
+      confirmButtonText: 'Buka WhatsApp Developer'
     });
 
     window.open(waUrl, '_blank', 'noopener,noreferrer');
+    setIsUploadingReceipt(false);
     setIsOrderModalOpen(false);
-    setIsSubmittingOrder(false);
+    setOrderStep('form');
   };
 
   return (
@@ -715,8 +801,14 @@ export default function LandingPage() {
                 <div className="lp-order-modal-brand">
                   <FlowerLotus size={24} weight="fill" className="lp-logo-symbol" />
                   <div>
-                    <h3 id="order-modal-title">Formulir Pemesanan Undangan</h3>
-                    <p className="lp-order-modal-sub">Data akan langsung masuk ke panel developer</p>
+                    <h3 id="order-modal-title">
+                      {orderStep === 'form' ? `Pemesanan ${orderPackage}` : 'Pembayaran Tagihan via QRIS'}
+                    </h3>
+                    <p className="lp-order-modal-sub">
+                      {orderStep === 'form' 
+                        ? `Biaya Paket: ${orderPrice} • Lengkapi data mempelai untuk pembuatan draf` 
+                        : `Total Tagihan: ${orderPrice} • Scan QRIS di bawah dan unggah bukti transfer`}
+                    </p>
                   </div>
                 </div>
                 <button 
@@ -729,265 +821,375 @@ export default function LandingPage() {
                 </button>
               </div>
 
-              <div className="lp-order-package-banner">
-                <div className="lp-order-package-info">
-                  <span className="lp-order-package-badge">{orderPackage}</span>
-                  <span className="lp-order-package-price">{orderPrice}</span>
-                </div>
-                <p className="lp-order-package-desc">
-                  Setelah mengirim formulir, data otomatis tercatat di dashboard developer dan Anda diarahkan ke WhatsApp untuk konfirmasi detail foto &amp; acara.
-                </p>
-              </div>
-
-              <form onSubmit={handleOrderSubmit} className="lp-order-form">
-                {/* 1. Tautan Undangan */}
-                <div className="lp-order-form-group full-width">
-                  <label htmlFor="order-slug">
-                    <span>Nama Tautan Undangan (Wajib diisi, huruf kecil tanpa spasi) *</span>
-                  </label>
-                  <input
-                    id="order-slug"
-                    type="text"
-                    required
-                    placeholder="Contoh: dimas-anisa"
-                    value={orderSlug}
-                    onChange={(e) => handleSlugChange(e.target.value)}
-                    className="lp-order-input"
-                  />
-                  <small className="lp-order-helper-text">
-                    Tautan undangan Anda nantinya: domainanda.com/?id=<strong>{orderSlug || 'dimas-anisa'}</strong>
-                  </small>
-                </div>
-
-                {/* 2. Data Mempelai Wanita */}
-                <div className="lp-order-grid-2">
-                  <div className="lp-order-form-group">
-                    <label htmlFor="order-wanita-panggilan">
-                      <span>Nama Panggilan Mempelai Wanita *</span>
+              {/* LANGKAH 1: FORMULIR DATA MEMPELAI */}
+              {orderStep === 'form' && (
+                <form onSubmit={handleProceedToPayment} className="lp-order-form">
+                  {/* 1. Tautan Undangan */}
+                  <div className="lp-order-form-group full-width">
+                    <label htmlFor="order-slug">
+                      <span>Nama Tautan Undangan (Wajib diisi, huruf kecil tanpa spasi) *</span>
                     </label>
                     <input
-                      id="order-wanita-panggilan"
+                      id="order-slug"
                       type="text"
                       required
-                      placeholder="Contoh: Dimas"
-                      value={orderWanitaPanggilan}
-                      onChange={(e) => handleWanitaPanggilanChange(e.target.value)}
+                      placeholder="Contoh: dimas-anisa"
+                      value={orderSlug}
+                      onChange={(e) => handleSlugChange(e.target.value)}
                       className="lp-order-input"
                     />
+                    <small className="lp-order-helper-text">
+                      Tautan undangan Anda nantinya: domainanda.com/?id=<strong>{orderSlug || 'dimas-anisa'}</strong>
+                    </small>
                   </div>
 
-                  <div className="lp-order-form-group">
-                    <label htmlFor="order-wanita-lengkap">
-                      <span>Nama Lengkap &amp; Gelar Mempelai Wanita</span>
+                  {/* 2. Data Mempelai Wanita */}
+                  <div className="lp-order-grid-2">
+                    <div className="lp-order-form-group">
+                      <label htmlFor="order-wanita-panggilan">
+                        <span>Nama Panggilan Mempelai Wanita *</span>
+                      </label>
+                      <input
+                        id="order-wanita-panggilan"
+                        type="text"
+                        required
+                        placeholder="Contoh: Dimas"
+                        value={orderWanitaPanggilan}
+                        onChange={(e) => handleWanitaPanggilanChange(e.target.value)}
+                        className="lp-order-input"
+                      />
+                    </div>
+
+                    <div className="lp-order-form-group">
+                      <label htmlFor="order-wanita-lengkap">
+                        <span>Nama Lengkap &amp; Gelar Mempelai Wanita</span>
+                        <span className="lp-label-optional">(Opsional)</span>
+                      </label>
+                      <input
+                        id="order-wanita-lengkap"
+                        type="text"
+                        placeholder="Contoh: Dimas Salsabila, S.Kom"
+                        value={orderWanitaLengkap}
+                        onChange={(e) => setOrderWanitaLengkap(e.target.value)}
+                        className="lp-order-input"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="lp-order-grid-2">
+                    <div className="lp-order-form-group">
+                      <label htmlFor="order-wanita-ortu">
+                        <span>Nama Orang Tua Mempelai Wanita</span>
+                        <span className="lp-label-optional">(Opsional)</span>
+                      </label>
+                      <input
+                        id="order-wanita-ortu"
+                        type="text"
+                        placeholder="Contoh: Bpk. Ahmad Fauzi & Ibu Siti Aminah"
+                        value={orderWanitaOrtu}
+                        onChange={(e) => setOrderWanitaOrtu(e.target.value)}
+                        className="lp-order-input"
+                      />
+                    </div>
+
+                    <div className="lp-order-form-group">
+                      <label htmlFor="order-wanita-ig">
+                        <span>Akun Instagram Mempelai Wanita</span>
+                        <span className="lp-label-optional">(Opsional)</span>
+                      </label>
+                      <input
+                        id="order-wanita-ig"
+                        type="text"
+                        placeholder="Contoh: @nadiasalsabila"
+                        value={orderWanitaIg}
+                        onChange={(e) => setOrderWanitaIg(e.target.value)}
+                        className="lp-order-input"
+                      />
+                    </div>
+                  </div>
+
+                  {/* 3. Data Mempelai Pria */}
+                  <div className="lp-order-grid-2">
+                    <div className="lp-order-form-group">
+                      <label htmlFor="order-pria-panggilan">
+                        <span>Nama Panggilan Mempelai Pria *</span>
+                      </label>
+                      <input
+                        id="order-pria-panggilan"
+                        type="text"
+                        required
+                        placeholder="Contoh: Anisa"
+                        value={orderPriaPanggilan}
+                        onChange={(e) => handlePriaPanggilanChange(e.target.value)}
+                        className="lp-order-input"
+                      />
+                    </div>
+
+                    <div className="lp-order-form-group">
+                      <label htmlFor="order-pria-lengkap">
+                        <span>Nama Lengkap &amp; Gelar Mempelai Pria</span>
+                        <span className="lp-label-optional">(Opsional)</span>
+                      </label>
+                      <input
+                        id="order-pria-lengkap"
+                        type="text"
+                        placeholder="Contoh: Anisa Pratama, S.T"
+                        value={orderPriaLengkap}
+                        onChange={(e) => setOrderPriaLengkap(e.target.value)}
+                        className="lp-order-input"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="lp-order-grid-2">
+                    <div className="lp-order-form-group">
+                      <label htmlFor="order-pria-ortu">
+                        <span>Nama Orang Tua Mempelai Pria</span>
+                        <span className="lp-label-optional">(Opsional)</span>
+                      </label>
+                      <input
+                        id="order-pria-ortu"
+                        type="text"
+                        placeholder="Contoh: Bpk. Hendra Wijaya & Ibu Ratna Dewi"
+                        value={orderPriaOrtu}
+                        onChange={(e) => setOrderPriaOrtu(e.target.value)}
+                        className="lp-order-input"
+                      />
+                    </div>
+
+                    <div className="lp-order-form-group">
+                      <label htmlFor="order-pria-ig">
+                        <span>Akun Instagram Mempelai Pria</span>
+                        <span className="lp-label-optional">(Opsional)</span>
+                      </label>
+                      <input
+                        id="order-pria-ig"
+                        type="text"
+                        placeholder="Contoh: @aguspratama"
+                        value={orderPriaIg}
+                        onChange={(e) => setOrderPriaIg(e.target.value)}
+                        className="lp-order-input"
+                      />
+                    </div>
+                  </div>
+
+                  {/* 4. Judul Lagu & Nama Penyanyi (Opsional) */}
+                  <div className="lp-order-form-group full-width">
+                    <label htmlFor="order-song-title">
+                      <MusicNotes size={16} weight="bold" />
+                      <span>Judul Lagu &amp; Nama Penyanyi (Musik Latar Undangan)</span>
                       <span className="lp-label-optional">(Opsional)</span>
                     </label>
                     <input
-                      id="order-wanita-lengkap"
+                      id="order-song-title"
                       type="text"
-                      placeholder="Contoh: Dimas Salsabila, S.Kom"
-                      value={orderWanitaLengkap}
-                      onChange={(e) => setOrderWanitaLengkap(e.target.value)}
+                      placeholder="Contoh: Payung Teduh - Akad / Ed Sheeran - Perfect"
+                      value={orderSongTitle}
+                      onChange={(e) => setOrderSongTitle(e.target.value)}
                       className="lp-order-input"
                     />
+                    <small className="lp-order-helper-text">
+                      Lagu ini akan diputar otomatis saat tamu membuka website undangan pernikahan Anda.
+                    </small>
+                  </div>
+
+                  {/* 5. Kutipan Doa / Ayat Suci */}
+                  <div className="lp-order-form-group full-width">
+                    <label htmlFor="order-kutipan-doa">
+                      <span>Kutipan Doa / Ayat Suci</span>
+                      <span className="lp-label-optional">(Opsional)</span>
+                    </label>
+                    <textarea
+                      id="order-kutipan-doa"
+                      rows={3}
+                      placeholder="Contoh: Dan di antara tanda-tanda (kebesaran)-Nya ialah Dia menciptakan pasangan-pasangan untukmu dari jenismu sendiri..."
+                      value={orderKutipanDoa}
+                      onChange={(e) => setOrderKutipanDoa(e.target.value)}
+                      className="lp-order-textarea"
+                    ></textarea>
+                  </div>
+
+                  {/* 6. Kontak Pemesan & Jadwal Acara */}
+                  <div className="lp-order-grid-2">
+                    <div className="lp-order-form-group">
+                      <label htmlFor="order-phone">
+                        <span>Nomor WhatsApp Pemesan *</span>
+                      </label>
+                      <input
+                        id="order-phone"
+                        type="tel"
+                        required
+                        placeholder="Contoh: 081234567890"
+                        value={orderPhone}
+                        onChange={(e) => setOrderPhone(e.target.value)}
+                        className="lp-order-input"
+                      />
+                    </div>
+
+                    <div className="lp-order-form-group">
+                      <label htmlFor="order-event-date">
+                        <span>Perkiraan Tanggal Acara</span>
+                        <span className="lp-label-optional">(Opsional)</span>
+                      </label>
+                      <input
+                        id="order-event-date"
+                        type="date"
+                        value={orderEventDate}
+                        onChange={(e) => setOrderEventDate(e.target.value)}
+                        className="lp-order-input"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="lp-order-grid-2">
+                    <div className="lp-order-form-group">
+                      <label htmlFor="order-location">
+                        <span>Tempat / Lokasi Acara</span>
+                        <span className="lp-label-optional">(Opsional)</span>
+                      </label>
+                      <input
+                        id="order-location"
+                        type="text"
+                        placeholder="Contoh: Masjid Agung Al-Barkah / Grand Ballroom"
+                        value={orderEventLocation}
+                        onChange={(e) => setOrderEventLocation(e.target.value)}
+                        className="lp-order-input"
+                      />
+                    </div>
+
+                    <div className="lp-order-form-group">
+                      <label htmlFor="order-notes">
+                        <span>Catatan Tambahan / Konsep Acara</span>
+                        <span className="lp-label-optional">(Opsional)</span>
+                      </label>
+                      <input
+                        id="order-notes"
+                        type="text"
+                        placeholder="Contoh: Konsep sage green modern, nuansa adat..."
+                        value={orderNotes}
+                        onChange={(e) => setOrderNotes(e.target.value)}
+                        className="lp-order-input"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="lp-order-modal-actions">
+                    <button 
+                      type="button" 
+                      className="lp-btn lp-btn-secondary"
+                      onClick={() => setIsOrderModalOpen(false)}
+                      disabled={isSubmittingOrder}
+                    >
+                      Batal
+                    </button>
+                    <button 
+                      type="submit" 
+                      className="lp-btn lp-btn-primary lp-order-submit-btn"
+                      disabled={isSubmittingOrder}
+                    >
+                      <span>{isSubmittingOrder ? 'Menyimpan...' : 'Lanjut ke Pembayaran QRIS'}</span>
+                      <ArrowRight size={18} weight="bold" />
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {/* LANGKAH 2: TAMPILAN PEMBAYARAN QRIS & UNGGAH BUKTI */}
+              {orderStep === 'payment' && (
+                <div className="lp-payment-step-card">
+                  <div className="lp-qris-box-wrapper">
+                    <div className="lp-qris-tag-badge">
+                      <QrCode size={16} weight="bold" />
+                      <span>PEMBAYARAN QRIS RESMI</span>
+                    </div>
+
+                    <div className="lp-qris-image-frame">
+                      <img 
+                        src="/qris.jpeg" 
+                        alt="QRIS Digitalisasi.id" 
+                        className="lp-qris-img" 
+                      />
+                    </div>
+
+                    <div className="lp-qris-bill-amount">
+                      <span className="lp-bill-label">Total Tagihan ({orderPackage}):</span>
+                      <span className="lp-bill-value">{orderPrice}</span>
+                    </div>
+
+                    <p className="lp-qris-instruction">
+                      Scan kode barcode QRIS di atas melalui aplikasi m-Banking (BCA, Mandiri, BRI, BNI, BSI) atau e-Wallet (GoPay, OVO, Dana, ShopeePay).
+                    </p>
+
+                    <a 
+                      href="/qris.jpeg" 
+                      download="QRIS-Digitalisasi-id.jpeg" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="lp-btn-download-qris"
+                    >
+                      Unduh Gambar QRIS
+                    </a>
+                  </div>
+
+                  {/* Bagian Unggah Bukti Pembayaran */}
+                  <div className="lp-upload-receipt-section">
+                    <label className="lp-upload-receipt-heading">
+                      <span>Unggah Bukti Pembayaran / Transfer</span>
+                      <span className="lp-label-optional">(Disarankan)</span>
+                    </label>
+
+                    <div className="lp-upload-receipt-area">
+                      <label className="lp-upload-file-picker">
+                        <UploadSimple size={22} weight="bold" />
+                        <span>{receiptFile ? receiptFile.name : 'Pilih Foto Bukti Transfer / Screenshot Pembayaran'}</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleReceiptChange}
+                          className="sr-only"
+                        />
+                      </label>
+                      <small className="lp-upload-hint">Format file JPG, PNG, atau tangkapan layar (screenshot transfer bank / e-wallet).</small>
+                    </div>
+
+                    {receiptPreview && (
+                      <div className="lp-receipt-preview-container">
+                        <div className="lp-receipt-preview-header">
+                          <span className="lp-preview-caption">Pratinjau Bukti Transfer:</span>
+                          <button type="button" onClick={handleRemoveReceipt} className="lp-btn-remove-preview">
+                            Hapus / Ganti
+                          </button>
+                        </div>
+                        <div className="lp-receipt-preview-box">
+                          <img src={receiptPreview} alt="Bukti Transfer" className="lp-receipt-preview-img" />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Tombol Aksi Final */}
+                  <div className="lp-order-modal-actions">
+                    <button 
+                      type="button" 
+                      className="lp-btn lp-btn-secondary"
+                      onClick={() => setOrderStep('form')}
+                      disabled={isUploadingReceipt}
+                    >
+                      <ArrowLeft size={16} weight="bold" />
+                      <span>Ubah Data Formulir</span>
+                    </button>
+                    <button 
+                      type="button" 
+                      className="lp-btn lp-btn-primary lp-order-submit-btn"
+                      onClick={handleFinalConfirmPayment}
+                      disabled={isUploadingReceipt}
+                    >
+                      <WhatsappLogo size={18} weight="fill" />
+                      <span>{isUploadingReceipt ? 'Mengunggah & Mengirim...' : 'Kirim Bukti ke WhatsApp (081225589199)'}</span>
+                    </button>
                   </div>
                 </div>
-
-                <div className="lp-order-grid-2">
-                  <div className="lp-order-form-group">
-                    <label htmlFor="order-wanita-ortu">
-                      <span>Nama Orang Tua Mempelai Wanita</span>
-                      <span className="lp-label-optional">(Opsional)</span>
-                    </label>
-                    <input
-                      id="order-wanita-ortu"
-                      type="text"
-                      placeholder="Contoh: Bpk. Ahmad Fauzi & Ibu Siti Aminah"
-                      value={orderWanitaOrtu}
-                      onChange={(e) => setOrderWanitaOrtu(e.target.value)}
-                      className="lp-order-input"
-                    />
-                  </div>
-
-                  <div className="lp-order-form-group">
-                    <label htmlFor="order-wanita-ig">
-                      <span>Akun Instagram Mempelai Wanita</span>
-                      <span className="lp-label-optional">(Opsional)</span>
-                    </label>
-                    <input
-                      id="order-wanita-ig"
-                      type="text"
-                      placeholder="Contoh: @nadiasalsabila"
-                      value={orderWanitaIg}
-                      onChange={(e) => setOrderWanitaIg(e.target.value)}
-                      className="lp-order-input"
-                    />
-                  </div>
-                </div>
-
-                {/* 3. Data Mempelai Pria */}
-                <div className="lp-order-grid-2">
-                  <div className="lp-order-form-group">
-                    <label htmlFor="order-pria-panggilan">
-                      <span>Nama Panggilan Mempelai Pria *</span>
-                    </label>
-                    <input
-                      id="order-pria-panggilan"
-                      type="text"
-                      required
-                      placeholder="Contoh: Anisa"
-                      value={orderPriaPanggilan}
-                      onChange={(e) => handlePriaPanggilanChange(e.target.value)}
-                      className="lp-order-input"
-                    />
-                  </div>
-
-                  <div className="lp-order-form-group">
-                    <label htmlFor="order-pria-lengkap">
-                      <span>Nama Lengkap &amp; Gelar Mempelai Pria</span>
-                      <span className="lp-label-optional">(Opsional)</span>
-                    </label>
-                    <input
-                      id="order-pria-lengkap"
-                      type="text"
-                      placeholder="Contoh: Anisa Pratama, S.T"
-                      value={orderPriaLengkap}
-                      onChange={(e) => setOrderPriaLengkap(e.target.value)}
-                      className="lp-order-input"
-                    />
-                  </div>
-                </div>
-
-                <div className="lp-order-grid-2">
-                  <div className="lp-order-form-group">
-                    <label htmlFor="order-pria-ortu">
-                      <span>Nama Orang Tua Mempelai Pria</span>
-                      <span className="lp-label-optional">(Opsional)</span>
-                    </label>
-                    <input
-                      id="order-pria-ortu"
-                      type="text"
-                      placeholder="Contoh: Bpk. Hendra Wijaya & Ibu Ratna Dewi"
-                      value={orderPriaOrtu}
-                      onChange={(e) => setOrderPriaOrtu(e.target.value)}
-                      className="lp-order-input"
-                    />
-                  </div>
-
-                  <div className="lp-order-form-group">
-                    <label htmlFor="order-pria-ig">
-                      <span>Akun Instagram Mempelai Pria</span>
-                      <span className="lp-label-optional">(Opsional)</span>
-                    </label>
-                    <input
-                      id="order-pria-ig"
-                      type="text"
-                      placeholder="Contoh: @aguspratama"
-                      value={orderPriaIg}
-                      onChange={(e) => setOrderPriaIg(e.target.value)}
-                      className="lp-order-input"
-                    />
-                  </div>
-                </div>
-
-                {/* 4. Kutipan Doa / Ayat Suci */}
-                <div className="lp-order-form-group full-width">
-                  <label htmlFor="order-kutipan-doa">
-                    <span>Kutipan Doa / Ayat Suci</span>
-                    <span className="lp-label-optional">(Opsional)</span>
-                  </label>
-                  <textarea
-                    id="order-kutipan-doa"
-                    rows={3}
-                    placeholder="Contoh: Dan di antara tanda-tanda (kebesaran)-Nya ialah Dia menciptakan pasangan-pasangan untukmu dari jenismu sendiri..."
-                    value={orderKutipanDoa}
-                    onChange={(e) => setOrderKutipanDoa(e.target.value)}
-                    className="lp-order-textarea"
-                  ></textarea>
-                </div>
-
-                {/* 5. Kontak Pemesan & Jadwal Acara */}
-                <div className="lp-order-grid-2">
-                  <div className="lp-order-form-group">
-                    <label htmlFor="order-phone">
-                      <span>Nomor WhatsApp Pemesan *</span>
-                    </label>
-                    <input
-                      id="order-phone"
-                      type="tel"
-                      required
-                      placeholder="Contoh: 081234567890"
-                      value={orderPhone}
-                      onChange={(e) => setOrderPhone(e.target.value)}
-                      className="lp-order-input"
-                    />
-                  </div>
-
-                  <div className="lp-order-form-group">
-                    <label htmlFor="order-event-date">
-                      <span>Perkiraan Tanggal Acara</span>
-                      <span className="lp-label-optional">(Opsional)</span>
-                    </label>
-                    <input
-                      id="order-event-date"
-                      type="date"
-                      value={orderEventDate}
-                      onChange={(e) => setOrderEventDate(e.target.value)}
-                      className="lp-order-input"
-                    />
-                  </div>
-                </div>
-
-                <div className="lp-order-grid-2">
-                  <div className="lp-order-form-group">
-                    <label htmlFor="order-location">
-                      <span>Tempat / Lokasi Acara</span>
-                      <span className="lp-label-optional">(Opsional)</span>
-                    </label>
-                    <input
-                      id="order-location"
-                      type="text"
-                      placeholder="Contoh: Masjid Agung Al-Barkah / Grand Ballroom"
-                      value={orderEventLocation}
-                      onChange={(e) => setOrderEventLocation(e.target.value)}
-                      className="lp-order-input"
-                    />
-                  </div>
-
-                  <div className="lp-order-form-group">
-                    <label htmlFor="order-notes">
-                      <span>Catatan Tambahan / Konsep Acara</span>
-                      <span className="lp-label-optional">(Opsional)</span>
-                    </label>
-                    <input
-                      id="order-notes"
-                      type="text"
-                      placeholder="Contoh: Konsep sage green modern, lagu khusus..."
-                      value={orderNotes}
-                      onChange={(e) => setOrderNotes(e.target.value)}
-                      className="lp-order-input"
-                    />
-                  </div>
-                </div>
-
-                <div className="lp-order-modal-actions">
-                  <button 
-                    type="button" 
-                    className="lp-btn lp-btn-secondary"
-                    onClick={() => setIsOrderModalOpen(false)}
-                    disabled={isSubmittingOrder}
-                  >
-                    Batal
-                  </button>
-                  <button 
-                    type="submit" 
-                    className="lp-btn lp-btn-primary lp-order-submit-btn"
-                    disabled={isSubmittingOrder}
-                  >
-                    <PaperPlaneTilt size={18} weight="bold" />
-                    <span>{isSubmittingOrder ? 'Menyimpan...' : 'Kirim Pesanan & Lanjut ke WA'}</span>
-                  </button>
-                </div>
-              </form>
+              )}
             </div>
           </div>
         )}

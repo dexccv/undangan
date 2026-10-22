@@ -53,7 +53,8 @@ import {
   X,
   FileText,
   ChatTeardropText,
-  FlowerLotus
+  FlowerLotus,
+  MusicNotes
 } from '@phosphor-icons/react';
 import * as XLSX from 'xlsx';
 import Swal from 'sweetalert2';
@@ -428,6 +429,7 @@ export default function DevDashboard() {
       quote_teks: order.kutipan_doa || initial.quote_teks,
       lokasi_akad: order.event_location || initial.lokasi_akad,
       lokasi_resepsi: order.event_location || initial.lokasi_resepsi,
+      judul_lagu: order.song_title || initial.judul_lagu || 'Payung Teduh - Akad',
 
       tanggal_cover: formattedDate || initial.tanggal_cover,
       tanggal_akad: order.event_date ? `${order.event_date}T08:00:00` : initial.tanggal_akad,
@@ -2407,12 +2409,35 @@ export default function DevDashboard() {
 
                       <div className="dev-order-card-body">
                         <div className="dev-order-couple-title">
-                          <h4>{ord.couple_name || 'Calon Pengantin'}</h4>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.4rem' }}>
+                            <h4>{ord.couple_name || 'Calon Pengantin'}</h4>
+                            {ord.slug && (
+                              <span className="dev-slug-badge">/?id={ord.slug}</span>
+                            )}
+                          </div>
                           <span className="dev-order-date-meta">
                             <CalendarBlank size={14} weight="bold" />
                             <span>Acara: {ord.event_date || 'Belum ditentukan'}</span>
                           </span>
                         </div>
+
+                        {ord.song_title && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', color: 'var(--dev-gold)', marginTop: '0.2rem' }}>
+                            <MusicNotes size={14} weight="bold" />
+                            <span>Lagu: <strong>{ord.song_title}</strong></span>
+                          </div>
+                        )}
+
+                        {(ord.receipt_url || ord.receipt_name || ord.has_receipt) && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', color: '#346538', marginTop: '0.2rem', fontWeight: 600 }}>
+                            <CheckCircle size={14} weight="bold" />
+                            <span>Bukti QRIS: {ord.receipt_url ? (
+                              <a href={ord.receipt_url} target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'underline' }}>
+                                Lihat Foto
+                              </a>
+                            ) : (ord.receipt_name || 'Sudah dilampirkan via WA')}</span>
+                          </div>
+                        )}
 
                         {ord.notes && (
                           <div className="dev-order-notes-box">
