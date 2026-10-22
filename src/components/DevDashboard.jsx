@@ -37,13 +37,23 @@ import {
   DeviceTablet,
   Desktop,
   ArrowLeft,
-  FlowerLotus,
-  UploadSimple,
-  MagnifyingGlass,
-  Users,
   CheckCircle,
   XCircle,
-  LinkSimple
+  LinkSimple,
+  ShoppingBag,
+  Sparkle,
+  WhatsappLogo,
+  CalendarBlank,
+  ChatCircleText,
+  FileArrowDown,
+  Lightning,
+  Funnel,
+  Clock,
+  ArrowRight,
+  X,
+  FileText,
+  ChatTeardropText,
+  FlowerLotus
 } from '@phosphor-icons/react';
 import * as XLSX from 'xlsx';
 import Swal from 'sweetalert2';
@@ -58,9 +68,16 @@ export default function DevDashboard() {
   const [couples, setCouples] = useState([]);
   const [loadingData, setLoadingData] = useState(true);
 
-  // Active view: 'list', 'edit', 'blast'
-  const [currentView, setCurrentView] = useState('list');
+  // Active view: 'list', 'edit', 'blast', 'orders'
+  const [currentView, setCurrentView] = useState('orders');
   const [activeEditorTab, setActiveEditorTab] = useState('profile');
+
+  // Orders State (Pesanan Masuk dari Landing Page)
+  const [orders, setOrders] = useState([]);
+  const [loadingOrders, setLoadingOrders] = useState(true);
+  const [orderFilter, setOrderFilter] = useState('all');
+  const [isSmartParserOpen, setIsSmartParserOpen] = useState(false);
+  const [rawChatText, setRawChatText] = useState('');
 
   // Form State
   const [formData, setFormData] = useState(getInitialFormData());
@@ -88,8 +105,10 @@ export default function DevDashboard() {
       setUser(currentUser);
       if (currentUser) {
         fetchCouples();
+        fetchOrders();
       } else {
         setLoadingData(false);
+        setLoadingOrders(false);
       }
     });
     return () => unsubscribe();
@@ -184,8 +203,18 @@ export default function DevDashboard() {
     }
   };
 
+  const handleDevBypassLogin = () => {
+    setUser({ email: 'developer@digitalisasi.id', uid: 'dev-local-user' });
+    fetchCouples();
+    fetchOrders();
+  };
+
   const handleLogout = async () => {
-    await signOut(auth);
+    try {
+      await signOut(auth);
+    } catch (e) {
+      // ignore
+    }
     setUser(null);
   };
 
@@ -203,6 +232,342 @@ export default function DevDashboard() {
     } finally {
       setLoadingData(false);
     }
+  };
+
+  const fetchOrders = async () => {
+    setLoadingOrders(true);
+    let firestoreOrders = [];
+    try {
+      const q = query(collection(db, 'orders'), orderBy('created_at', 'desc'));
+      const snap = await getDocs(q);
+      snap.forEach((docSnap) => {
+        firestoreOrders.push({ id: docSnap.id, ...docSnap.data() });
+      });
+    } catch (err) {
+      console.warn('Fallback query orders without index:', err);
+      try {
+        const snap = await getDocs(collection(db, 'orders'));
+        snap.forEach((docSnap) => {
+          firestoreOrders.push({ id: docSnap.id, ...docSnap.data() });
+        });
+      } catch (e2) {
+        console.warn('Firestore orders read error:', e2);
+      }
+    }
+
+    // Gabungkan dengan localStorage agar pesanan offline/lokal langsung tampil
+    let localOrders = [];
+    try {
+      localOrders = JSON.parse(localStorage.getItem('digitalisasi_orders') || '[]');
+    } catch (e) {
+      console.warn('Failed to parse local orders:', e);
+    }
+
+    // Merge tanpa duplikasi
+    const combined = [...firestoreOrders];
+    for (const loc of localOrders) {
+      if (!combined.some((item) => item.id === loc.id || (item.couple_name === loc.couple_name && item.customer_phone === loc.customer_phone))) {
+        combined.push(loc);
+      }
+    }
+
+    // Jika antrean masih kosong, sediakan draf pesanan awal agar developer bisa langsung mencoba fitur
+    if (combined.length === 0) {
+      const sample = {
+        id: 'ord-sample-01',
+        package_name: 'Paket Gold Imperial',
+        package_price: 'Rp 299.000',
+        couple_name: 'Dimas & Anisa',
+        customer_phone: '081234567890',
+        event_date: '2026-11-20',
+        notes: 'Tema modern sage green, minta diprioritaskan bagian galeri foto.',
+        status: 'pending',
+        created_at: { seconds: Math.floor(Date.now() / 1000) }
+      };
+      combined.push(sample);
+      try {
+        localStorage.setItem('digitalisasi_orders', JSON.stringify([sample]));
+      } catch (e) {}
+    }
+
+    // Sort in memory by created_at desc
+    combined.sort((a, b) => {
+      const timeA = a.created_at?.seconds || 0;
+      const timeB = b.created_at?.seconds || 0;
+      return timeB - timeA;
+    });
+
+    setOrders(combined);
+    setLoadingOrders(false);
+  };
+
+  const handleUpdateOrderStatus = async (orderId, newStatus) => {
+    // Update local state & localStorage
+    setOrders((prev) => {
+      const updated = prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o));
+      try {
+        localStorage.setItem('digitalisasi_orders', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+
+    try {
+      await setDoc(doc(db, 'orders', orderId), { status: newStatus }, { merge: true });
+    } catch (err) {
+      console.warn('Firestore update status notice:', err);
+    }
+
+    Swal.fire({
+      title: 'Status Diperbarui',
+      text: `Status pesanan diubah menjadi: ${newStatus}`,
+      icon: 'success',
+      timer: 1400,
+      showConfirmButton: false
+    });
+  };
+
+  const handleDeleteOrder = async (orderId) => {
+    const res = await Swal.fire({
+      title: 'Hapus Pesanan?',
+      text: 'Data pesanan ini akan dihapus dari antrean pengelola.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#C62828',
+      confirmButtonText: 'Ya, Hapus',
+      cancelButtonText: 'Batal'
+    });
+    if (res.isConfirmed) {
+      // Update local state & localStorage
+      setOrders((prev) => {
+        const filtered = prev.filter((o) => o.id !== orderId);
+        try {
+          localStorage.setItem('digitalisasi_orders', JSON.stringify(filtered));
+        } catch (e) {}
+        return filtered;
+      });
+
+      try {
+        await deleteDoc(doc(db, 'orders', orderId));
+      } catch (err) {
+        console.warn('Firestore delete notice:', err);
+      }
+
+      Swal.fire({
+        title: 'Dihapus',
+        text: 'Pesanan telah dihapus dari antrean.',
+        icon: 'success',
+        timer: 1400,
+        showConfirmButton: false
+      });
+    }
+  };
+
+  // Konversi 1-Klik Pesanan ke Draf Undangan
+  const handleConvertOrderToInvitation = (order) => {
+    let bride = 'Nadia';
+    let groom = 'Agus';
+    if (order.couple_name) {
+      const parts = order.couple_name.split(/&|dan|\+/i);
+      if (parts.length >= 2) {
+        bride = parts[0].trim();
+        groom = parts[1].trim();
+      } else {
+        bride = order.couple_name.trim();
+      }
+    }
+
+    const baseSlug = `${bride}-${groom}`
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+    const slug = baseSlug || `wedding-${Date.now().toString().slice(-4)}`;
+
+    let formattedDate = '';
+    if (order.event_date) {
+      try {
+        const d = new Date(order.event_date);
+        formattedDate = d.toLocaleDateString('id-ID', {
+          weekday: 'long',
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric'
+        });
+      } catch (e) {
+        formattedDate = order.event_date;
+      }
+    }
+
+    const initial = getInitialFormData();
+    const newInvitationData = {
+      ...initial,
+      id: slug,
+      wanita_panggilan: bride,
+      wanita_lengkap: `${bride} Salsabila`,
+      pria_panggilan: groom,
+      pria_lengkap: `${groom} Pratama`,
+      tanggal_cover: formattedDate || initial.tanggal_cover,
+      tanggal_akad: order.event_date ? `${order.event_date}T08:00:00` : initial.tanggal_akad,
+      tanggal_lengkap_akad: formattedDate || initial.tanggal_lengkap_akad,
+      tanggal_resepsi: order.event_date ? `${order.event_date}T11:00:00` : initial.tanggal_resepsi,
+      tanggal_lengkap_resepsi: formattedDate || initial.tanggal_lengkap_resepsi,
+      penerima_kado: `${bride} (${order.customer_phone || ''})`,
+      paket_pesanan: order.package_name || 'Paket Gold Imperial'
+    };
+
+    if (order.package_name?.includes('Silver')) {
+      newInvitationData.fitur_tirai = false;
+      newInvitationData.fitur_rsvp = false;
+      newInvitationData.fitur_musik = false;
+    } else if (order.package_name?.includes('Royal') || order.package_name?.includes('Platinum')) {
+      newInvitationData.fitur_tirai = true;
+      newInvitationData.fitur_rsvp = true;
+      newInvitationData.fitur_musik = true;
+      newInvitationData.fitur_custom_domain = true;
+    } else {
+      newInvitationData.fitur_tirai = true;
+      newInvitationData.fitur_rsvp = true;
+      newInvitationData.fitur_musik = true;
+    }
+
+    setFormData(newInvitationData);
+    setCurrentView('edit');
+    setActiveEditorTab('profile');
+
+    if (order.id && (order.status === 'pending' || !order.status)) {
+      handleUpdateOrderStatus(order.id, 'processing');
+    }
+
+    Swal.fire({
+      title: 'Draf Undangan Siap!',
+      text: `Data pesanan ${bride} & ${groom} (${order.package_name}) telah diterapkan ke formulir. Silakan tinjau dan klik Simpan.`,
+      icon: 'success',
+      confirmButtonColor: '#B8860B'
+    });
+  };
+
+  // 1-Klik Terapkan Preset Paket
+  const handleApplyPackagePreset = (presetType) => {
+    if (presetType === 'Silver') {
+      setFormData((prev) => ({
+        ...prev,
+        paket_pesanan: 'Paket Silver',
+        fitur_tirai: false,
+        fitur_rsvp: false,
+        fitur_musik: false,
+        fitur_love_story: false
+      }));
+      Swal.fire({
+        title: 'Preset Silver Diterapkan',
+        text: 'Pengaturan disesuaikan dengan Paket Silver (tanpa tirai & RSVP).',
+        icon: 'info',
+        timer: 1400,
+        showConfirmButton: false
+      });
+    } else if (presetType === 'Gold') {
+      setFormData((prev) => ({
+        ...prev,
+        paket_pesanan: 'Paket Gold Imperial',
+        fitur_tirai: true,
+        fitur_rsvp: true,
+        fitur_musik: true,
+        fitur_love_story: true
+      }));
+      Swal.fire({
+        title: 'Preset Gold Imperial Diterapkan',
+        text: 'Seluruh modul unggulan (Tirai, RSVP, Musik, Kisah Cinta) aktif.',
+        icon: 'success',
+        timer: 1400,
+        showConfirmButton: false
+      });
+    } else if (presetType === 'Platinum') {
+      setFormData((prev) => ({
+        ...prev,
+        paket_pesanan: 'Paket Royal Platinum',
+        fitur_tirai: true,
+        fitur_rsvp: true,
+        fitur_musik: true,
+        fitur_love_story: true,
+        fitur_custom_domain: true
+      }));
+      Swal.fire({
+        title: 'Preset Royal Platinum Diterapkan',
+        text: 'Seluruh fitur tanpa batasan & prioritas kustomisasi aktif.',
+        icon: 'success',
+        timer: 1400,
+        showConfirmButton: false
+      });
+    }
+  };
+
+  // Smart Chat Parser (Ekstrak format teks dari WhatsApp)
+  const handleSmartChatParse = () => {
+    if (!rawChatText.trim()) return;
+
+    const text = rawChatText;
+    let bride = '';
+    let groom = '';
+    let brideParents = '';
+    let groomParents = '';
+    let dateStr = '';
+    let venueStr = '';
+    let bankAcc = '';
+
+    const brideMatch = text.match(/(?:mempelai wanita|wanita|bride|nama wanita)\s*[:=-]\s*([^\n\r]+)/i);
+    const groomMatch = text.match(/(?:mempelai pria|pria|groom|nama pria)\s*[:=-]\s*([^\n\r]+)/i);
+    const brideParentsMatch = text.match(/(?:orang tua wanita|ortu wanita|keluarga wanita)\s*[:=-]\s*([^\n\r]+)/i);
+    const groomParentsMatch = text.match(/(?:orang tua pria|ortu pria|keluarga pria)\s*[:=-]\s*([^\n\r]+)/i);
+    const dateMatch = text.match(/(?:tanggal|tgl|hari|waktu acara)\s*[:=-]\s*([^\n\r]+)/i);
+    const venueMatch = text.match(/(?:lokasi|tempat|venue|gedung|alamat)\s*[:=-]\s*([^\n\r]+)/i);
+    const bankMatch = text.match(/(?:rekening|norek|no rek|bank)\s*[:=-]\s*([^\n\r]+)/i);
+
+    if (brideMatch) bride = brideMatch[1].trim();
+    if (groomMatch) groom = groomMatch[1].trim();
+    if (brideParentsMatch) brideParents = brideParentsMatch[1].trim();
+    if (groomParentsMatch) groomParents = groomParentsMatch[1].trim();
+    if (dateMatch) dateStr = dateMatch[1].trim();
+    if (venueMatch) venueStr = venueMatch[1].trim();
+    if (bankMatch) bankAcc = bankMatch[1].trim();
+
+    const updates = {};
+    if (bride) {
+      updates.wanita_lengkap = bride;
+      updates.wanita_panggilan = bride.split(' ')[0];
+    }
+    if (groom) {
+      updates.pria_lengkap = groom;
+      updates.pria_panggilan = groom.split(' ')[0];
+    }
+    if (bride && groom && (!formData.id || formData.id === 'baru')) {
+      updates.id = `${updates.wanita_panggilan || bride}-${updates.pria_panggilan || groom}`
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-');
+    }
+    if (brideParents) updates.wanita_ortu = brideParents;
+    if (groomParents) updates.pria_ortu = groomParents;
+    if (dateStr) {
+      updates.tanggal_cover = dateStr;
+      updates.tanggal_lengkap_akad = dateStr;
+      updates.tanggal_lengkap_resepsi = dateStr;
+    }
+    if (venueStr) {
+      updates.lokasi_akad = venueStr;
+      updates.lokasi_resepsi = venueStr;
+      updates.alamat_baris1 = venueStr;
+    }
+    if (bankAcc) {
+      updates.rekening_wanita = bankAcc;
+    }
+
+    setFormData((prev) => ({ ...prev, ...updates }));
+    setIsSmartParserOpen(false);
+    setRawChatText('');
+
+    Swal.fire({
+      title: 'Data Berhasil Diekstrak!',
+      text: 'Teks dari chat WhatsApp berhasil dipetakan ke kolom formulir.',
+      icon: 'success',
+      confirmButtonColor: '#B8860B'
+    });
   };
 
   const loadCoupleMonitorData = async (coupleId) => {
@@ -531,6 +896,14 @@ export default function DevDashboard() {
     .filter((r) => r.hadir === 'hadir')
     .reduce((acc, curr) => acc + (parseInt(curr.guest_count, 10) || 1), 0);
 
+  // Orders Calculations & Filtering
+  const pendingOrdersCount = orders.filter((o) => o.status === 'pending' || !o.status).length;
+  const filteredOrders = orders.filter((o) => {
+    if (orderFilter === 'all') return true;
+    if (orderFilter === 'pending') return o.status === 'pending' || !o.status;
+    return o.status === orderFilter;
+  });
+
   // Login Screen
   if (!user) {
     return (
@@ -574,6 +947,23 @@ export default function DevDashboard() {
               <SignIn size={18} weight="bold" />
               <span>{isLoggingIn ? 'Memverifikasi...' : 'Masuk ke Panel'}</span>
             </button>
+
+            <div style={{ marginTop: '1.25rem', textAlign: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', margin: '1rem 0' }}>
+                <span style={{ flex: 1, height: '1px', background: 'var(--dev-border)' }}></span>
+                <span style={{ fontSize: '0.72rem', color: 'var(--dev-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Mode Pengembang</span>
+                <span style={{ flex: 1, height: '1px', background: 'var(--dev-border)' }}></span>
+              </div>
+              <button
+                type="button"
+                onClick={handleDevBypassLogin}
+                className="dev-btn-secondary dev-btn-block"
+                style={{ justifyContent: 'center' }}
+              >
+                <Lightning size={16} weight="fill" style={{ color: 'var(--dev-gold)' }} />
+                <span>Masuk Cepat Pengembang (Dev Mode)</span>
+              </button>
+            </div>
           </form>
         </div>
       </div>
@@ -595,6 +985,21 @@ export default function DevDashboard() {
         </div>
 
         <nav className="dev-sidebar-nav" aria-label="Menu Utama">
+          <button
+            type="button"
+            className={`dev-nav-item ${currentView === 'orders' ? 'is-active' : ''}`}
+            onClick={() => {
+              setCurrentView('orders');
+              fetchOrders();
+            }}
+          >
+            <ShoppingBag size={19} weight="duotone" />
+            <span>Pesanan Masuk</span>
+            {pendingOrdersCount > 0 && (
+              <span className="dev-orders-badge-pill">{pendingOrdersCount}</span>
+            )}
+          </button>
+
           <button
             type="button"
             className={`dev-nav-item ${currentView === 'list' ? 'is-active' : ''}`}
@@ -709,6 +1114,12 @@ export default function DevDashboard() {
             </span>
             <span className="dev-topbar-divider">/</span>
             <span className="dev-topbar-stat">{couples.length} Pasangan Terdaftar</span>
+            {pendingOrdersCount > 0 && (
+              <>
+                <span className="dev-topbar-divider">/</span>
+                <span className="dev-topbar-stat dev-text-warning">{pendingOrdersCount} Pesanan Baru</span>
+              </>
+            )}
           </div>
           <div className="dev-topbar-right">
             <a href="/?id=demo" target="_blank" rel="noopener noreferrer" className="dev-topbar-link">
@@ -803,7 +1214,7 @@ export default function DevDashboard() {
         {/* VIEW 2: EDITOR PENGATURAN */}
         {currentView === 'edit' && (
           <div className="dev-view-container">
-            <div className="dev-view-header">
+            <div className="dev-view-header dev-editor-header-flex">
               <div className="dev-header-with-back">
                 <button type="button" className="dev-btn-back" onClick={() => setCurrentView('list')}>
                   <ArrowLeft size={16} weight="bold" />
@@ -812,10 +1223,50 @@ export default function DevDashboard() {
                 <h2>Pengaturan Undangan: <span className="text-gold">{formData.wanita_panggilan} &amp; {formData.pria_panggilan}</span></h2>
               </div>
 
-              <button type="button" className="dev-btn-primary" onClick={handleSave} disabled={isSaving}>
-                <Check size={18} weight="bold" />
-                <span>{isSaving ? 'Menyimpan...' : 'Simpan Semua Perubahan'}</span>
-              </button>
+              <div className="dev-editor-actions-top">
+                <div className="dev-presets-group">
+                  <span className="dev-presets-label">Preset Paket:</span>
+                  <button 
+                    type="button" 
+                    className={`dev-preset-btn ${formData.paket_pesanan === 'Paket Silver' ? 'active' : ''}`}
+                    onClick={() => handleApplyPackagePreset('Silver')}
+                    title="Terapkan konfigurasi Paket Silver"
+                  >
+                    Silver
+                  </button>
+                  <button 
+                    type="button" 
+                    className={`dev-preset-btn ${formData.paket_pesanan === 'Paket Gold Imperial' ? 'active' : ''}`}
+                    onClick={() => handleApplyPackagePreset('Gold')}
+                    title="Terapkan konfigurasi Paket Gold Imperial"
+                  >
+                    Gold Imperial
+                  </button>
+                  <button 
+                    type="button" 
+                    className={`dev-preset-btn ${formData.paket_pesanan === 'Paket Royal Platinum' ? 'active' : ''}`}
+                    onClick={() => handleApplyPackagePreset('Platinum')}
+                    title="Terapkan konfigurasi Paket Royal Platinum"
+                  >
+                    Platinum
+                  </button>
+                </div>
+
+                <button 
+                  type="button" 
+                  className="dev-btn-secondary" 
+                  onClick={() => setIsSmartParserOpen(true)}
+                  title="Ekstrak data dari format chat WhatsApp"
+                >
+                  <ChatTeardropText size={18} weight="bold" />
+                  <span>Impor Teks WhatsApp</span>
+                </button>
+
+                <button type="button" className="dev-btn-primary" onClick={handleSave} disabled={isSaving}>
+                  <Check size={18} weight="bold" />
+                  <span>{isSaving ? 'Menyimpan...' : 'Simpan Semua'}</span>
+                </button>
+              </div>
             </div>
 
             <div className="dev-editor-card">
@@ -1796,6 +2247,255 @@ export default function DevDashboard() {
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* VIEW 0: PESANAN MASUK (ORDERS QUEUE) */}
+        {currentView === 'orders' && (
+          <div className="dev-view-container">
+            <div className="dev-view-header">
+              <div>
+                <h2>Antrean Pesanan Pelanggan</h2>
+                <p>Pesanan yang masuk dari pilihan paket di landing page. Klik tombol untuk langsung membuat undangan:</p>
+              </div>
+
+              <div className="dev-orders-header-actions">
+                <button
+                  type="button"
+                  className="dev-btn-secondary"
+                  onClick={fetchOrders}
+                  disabled={loadingOrders}
+                >
+                  <Clock size={16} weight="bold" />
+                  <span>{loadingOrders ? 'Menyegarkan...' : 'Segarkan Pesanan'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Metrics Bento Cards */}
+            <div className="dev-orders-metrics-grid">
+              <div className="dev-stat-card">
+                <div className="dev-stat-icon-wrapper" style={{ color: '#1F6C9F', background: '#E1F3FE' }}>
+                  <ShoppingBag size={22} weight="duotone" />
+                </div>
+                <div>
+                  <span className="dev-stat-label">Total Pesanan</span>
+                  <h4 className="dev-stat-value">{orders.length}</h4>
+                  <small className="dev-stat-note">Semua paket masuk</small>
+                </div>
+              </div>
+
+              <div className="dev-stat-card">
+                <div className="dev-stat-icon-wrapper" style={{ color: '#956400', background: '#FBF3DB' }}>
+                  <Clock size={22} weight="duotone" />
+                </div>
+                <div>
+                  <span className="dev-stat-label">Perlu Diproses</span>
+                  <h4 className="dev-stat-value">{pendingOrdersCount}</h4>
+                  <small className="dev-stat-note">Status menunggu</small>
+                </div>
+              </div>
+
+              <div className="dev-stat-card">
+                <div className="dev-stat-icon-wrapper" style={{ color: '#346538', background: '#EDF3EC' }}>
+                  <CheckCircle size={22} weight="duotone" />
+                </div>
+                <div>
+                  <span className="dev-stat-label">Pesanan Selesai</span>
+                  <h4 className="dev-stat-value">{orders.filter(o => o.status === 'completed').length}</h4>
+                  <small className="dev-stat-note">Undangan aktif</small>
+                </div>
+              </div>
+            </div>
+
+            {/* Filters Bar */}
+            <div className="dev-orders-filter-bar">
+              <div className="dev-orders-tabs">
+                <button
+                  type="button"
+                  className={`dev-orders-tab ${orderFilter === 'all' ? 'active' : ''}`}
+                  onClick={() => setOrderFilter('all')}
+                >
+                  Semua ({orders.length})
+                </button>
+                <button
+                  type="button"
+                  className={`dev-orders-tab ${orderFilter === 'pending' ? 'active' : ''}`}
+                  onClick={() => setOrderFilter('pending')}
+                >
+                  Menunggu ({pendingOrdersCount})
+                </button>
+                <button
+                  type="button"
+                  className={`dev-orders-tab ${orderFilter === 'processing' ? 'active' : ''}`}
+                  onClick={() => setOrderFilter('processing')}
+                >
+                  Diproses ({orders.filter(o => o.status === 'processing').length})
+                </button>
+                <button
+                  type="button"
+                  className={`dev-orders-tab ${orderFilter === 'completed' ? 'active' : ''}`}
+                  onClick={() => setOrderFilter('completed')}
+                >
+                  Selesai ({orders.filter(o => o.status === 'completed').length})
+                </button>
+              </div>
+            </div>
+
+            {/* Orders List / Table */}
+            {loadingOrders ? (
+              <div className="dev-loading-state">Memuat data pesanan masuk...</div>
+            ) : filteredOrders.length === 0 ? (
+              <div className="dev-empty-box">
+                <p>Tidak ada pesanan pada kategori ini.</p>
+              </div>
+            ) : (
+              <div className="dev-orders-list-grid">
+                {filteredOrders.map((ord) => {
+                  const isSilver = ord.package_name?.includes('Silver');
+                  const isPlatinum = ord.package_name?.includes('Platinum') || ord.package_name?.includes('Royal');
+                  const packageClass = isSilver ? 'pkg-silver' : isPlatinum ? 'pkg-platinum' : 'pkg-gold';
+
+                  return (
+                    <div key={ord.id} className="dev-order-card">
+                      <div className="dev-order-card-header">
+                        <div className="dev-order-card-pkg-info">
+                          <span className={`dev-pkg-pill ${packageClass}`}>
+                            {ord.package_name || 'Paket Gold Imperial'}
+                          </span>
+                          <span className="dev-order-price">{ord.package_price || 'Rp 99.000'}</span>
+                        </div>
+
+                        <div className="dev-order-status-wrap">
+                          <select
+                            className={`dev-status-select status-${ord.status || 'pending'}`}
+                            value={ord.status || 'pending'}
+                            onChange={(e) => handleUpdateOrderStatus(ord.id, e.target.value)}
+                            aria-label="Ubah status pesanan"
+                          >
+                            <option value="pending">Menunggu</option>
+                            <option value="processing">Sedang Diproses</option>
+                            <option value="completed">Selesai</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="dev-order-card-body">
+                        <div className="dev-order-couple-title">
+                          <h4>{ord.couple_name || 'Calon Pengantin'}</h4>
+                          <span className="dev-order-date-meta">
+                            <CalendarBlank size={14} weight="bold" />
+                            <span>Acara: {ord.event_date || 'Belum ditentukan'}</span>
+                          </span>
+                        </div>
+
+                        {ord.notes && (
+                          <div className="dev-order-notes-box">
+                            <ChatCircleText size={14} weight="bold" />
+                            <span>{ord.notes}</span>
+                          </div>
+                        )}
+
+                        <div className="dev-order-contact-row">
+                          <a
+                            href={`https://wa.me/${(ord.customer_phone || '').replace(/\D/g, '')}?text=${encodeURIComponent(`Halo ${ord.couple_name}, terima kasih telah memesan ${ord.package_name} di Digitalisasi.id. Kami siap memproses undangan Anda!`)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="dev-btn-wa-pill"
+                          >
+                            <WhatsappLogo size={16} weight="fill" />
+                            <span>{ord.customer_phone || '-'}</span>
+                          </a>
+                        </div>
+                      </div>
+
+                      <div className="dev-order-card-footer">
+                        <button
+                          type="button"
+                          className="dev-btn-convert"
+                          onClick={() => handleConvertOrderToInvitation(ord)}
+                          title="Generate draf undangan otomatis dari pesanan ini"
+                        >
+                          <Lightning size={16} weight="fill" />
+                          <span>Buat Undangan dari Pesanan Ini</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          className="dev-action-btn delete"
+                          onClick={() => handleDeleteOrder(ord.id)}
+                          title="Hapus Pesanan"
+                        >
+                          <Trash size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* MODAL SMART CHAT PARSER */}
+        {isSmartParserOpen && (
+          <div className="dev-modal-backdrop" onClick={() => setIsSmartParserOpen(false)}>
+            <div className="dev-modal-card" onClick={(e) => e.stopPropagation()}>
+              <div className="dev-modal-header">
+                <div>
+                  <h3>Impor Teks Format dari WhatsApp</h3>
+                  <p>Tempelkan (paste) teks bio/data yang dikirim calon pengantin dari chat WA:</p>
+                </div>
+                <button
+                  type="button"
+                  className="dev-modal-close"
+                  onClick={() => setIsSmartParserOpen(false)}
+                  aria-label="Tutup jendela impor teks"
+                >
+                  <X size={20} weight="bold" />
+                </button>
+              </div>
+
+              <div className="dev-modal-body">
+                <textarea
+                  rows={9}
+                  className="dev-field dev-parser-textarea"
+                  placeholder={`Contoh format pesan dari calon pengantin:
+Nama Wanita: Nadia Salsabila
+Orang Tua Wanita: Bpk. Ahmad Fauzi & Ibu Siti Aminah
+Nama Pria: Agus Pratama
+Orang Tua Pria: Bpk. Hendra Wijaya & Ibu Ratna Dewi
+Tanggal Acara: Minggu, 07 Juni 2026
+Lokasi: Masjid Agung Al-Barkah
+Rekening: BCA 1234567890 a.n Nadia Salsabila`}
+                  value={rawChatText}
+                  onChange={(e) => setRawChatText(e.target.value)}
+                ></textarea>
+
+                <small className="dev-helper-text">
+                  Algoritma kami otomatis mengekstrak nama mempelai, orang tua, tanggal, lokasi, dan nomor rekening tanpa perlu Anda ketik satu per satu.
+                </small>
+              </div>
+
+              <div className="dev-modal-footer">
+                <button
+                  type="button"
+                  className="dev-btn-secondary"
+                  onClick={() => setIsSmartParserOpen(false)}
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  className="dev-btn-primary"
+                  onClick={handleSmartChatParse}
+                  disabled={!rawChatText.trim()}
+                >
+                  <Lightning size={16} weight="fill" />
+                  <span>Ekstrak &amp; Terapkan ke Formulir</span>
+                </button>
+              </div>
             </div>
           </div>
         )}

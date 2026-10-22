@@ -1,4 +1,7 @@
 import React, { useState } from 'react';
+import { db } from '../firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import Swal from 'sweetalert2';
 import {
   Sparkle,
   Lightning,
@@ -15,7 +18,12 @@ import {
   Disc,
   ShieldCheck,
   Heart,
-  Users
+  Users,
+  CalendarBlank,
+  Phone,
+  User,
+  NotePencil,
+  PaperPlaneTilt
 } from '@phosphor-icons/react';
 import ThreeScene from './ThreeScene';
 import './LandingPage.css';
@@ -24,6 +32,16 @@ export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activePackageIndex, setActivePackageIndex] = useState(1);
   const pricingGridRef = React.useRef(null);
+
+  // State Modal Pemesanan Paket
+  const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
+  const [orderPackage, setOrderPackage] = useState('Paket Gold Imperial');
+  const [orderPrice, setOrderPrice] = useState('Rp 99.000');
+  const [orderCoupleName, setOrderCoupleName] = useState('');
+  const [orderPhone, setOrderPhone] = useState('');
+  const [orderEventDate, setOrderEventDate] = useState('');
+  const [orderNotes, setOrderNotes] = useState('');
+  const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
 
   const scrollToPackage = (idx, smooth = true) => {
     setActivePackageIndex(idx);
@@ -116,14 +134,76 @@ export default function LandingPage() {
     };
   }, [mobileMenuOpen]);
 
-  const handleSelectPackage = (packageName, e) => {
+  const handleSelectPackage = (packageName, price, e) => {
     if (e) {
       e.preventDefault();
       e.stopPropagation();
     }
-    const text = encodeURIComponent(`Halo, saya tertarik memesan ${packageName} di Digitalisasi.id`);
-    const waUrl = `https://wa.me/6281225589199?text=${text}`;
+    setOrderPackage(packageName);
+    setOrderPrice(price || 'Rp 99.000');
+    setIsOrderModalOpen(true);
+  };
+
+  const handleOrderSubmit = async (e) => {
+    e.preventDefault();
+    if (!orderCoupleName.trim() || !orderPhone.trim()) {
+      Swal.fire({
+        title: 'Lengkapi Data',
+        text: 'Mohon masukkan nama pasangan dan nomor WhatsApp aktif.',
+        icon: 'warning',
+        confirmButtonColor: '#B8860B'
+      });
+      return;
+    }
+
+    setIsSubmittingOrder(true);
+    const newOrder = {
+      id: 'ord-' + Date.now(),
+      package_name: orderPackage,
+      package_price: orderPrice,
+      couple_name: orderCoupleName.trim(),
+      customer_phone: orderPhone.trim(),
+      event_date: orderEventDate || '',
+      notes: orderNotes.trim() || '',
+      status: 'pending',
+      created_at: { seconds: Math.floor(Date.now() / 1000) }
+    };
+
+    // Selalu simpan ke localStorage agar tidak hilang meski Firebase offline/restricted
+    try {
+      const existing = JSON.parse(localStorage.getItem('digitalisasi_orders') || '[]');
+      localStorage.setItem('digitalisasi_orders', JSON.stringify([newOrder, ...existing]));
+    } catch (errLocal) {
+      console.warn('Local storage save error:', errLocal);
+    }
+
+    try {
+      await addDoc(collection(db, 'orders'), {
+        ...newOrder,
+        created_at: serverTimestamp()
+      });
+    } catch (err) {
+      console.warn('Firestore orders save warning (rules/offline):', err);
+    }
+
+    const waMsg = `Halo Admin Digitalisasi.id, saya ingin memesan:\n\n*Paket:* ${orderPackage} (${orderPrice})\n*Nama Pasangan:* ${orderCoupleName.trim()}\n*Nomor WhatsApp:* ${orderPhone.trim()}\n*Perkiraan Tanggal:* ${orderEventDate || '-'}\n*Catatan:* ${orderNotes.trim() || '-'}\n\nMohon informasi langkah selanjutnya. Terima kasih!`;
+    const waUrl = `https://wa.me/6281225589199?text=${encodeURIComponent(waMsg)}`;
+
+    await Swal.fire({
+      title: 'Pesanan Berhasil Dicatat!',
+      text: 'Data Anda telah tersimpan di sistem. Klik tombol di bawah untuk melanjutkan ke WhatsApp kami.',
+      icon: 'success',
+      confirmButtonColor: '#B8860B',
+      confirmButtonText: 'Lanjut ke WhatsApp'
+    });
+
     window.open(waUrl, '_blank', 'noopener,noreferrer');
+    setIsOrderModalOpen(false);
+    setOrderCoupleName('');
+    setOrderPhone('');
+    setOrderEventDate('');
+    setOrderNotes('');
+    setIsSubmittingOrder(false);
   };
 
   return (
@@ -222,15 +302,16 @@ export default function LandingPage() {
           </nav>
 
           <div className="lp-sidebar-footer">
-            <a
-              href="https://wa.me/6281225589199?text=Halo%20saya%20tertarik%20membuat%20undangan%20digital"
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              type="button"
               className="lp-btn lp-btn-primary lp-full-width lp-btn-sidebar"
-              onClick={() => setMobileMenuOpen(false)}
+              onClick={(e) => {
+                setMobileMenuOpen(false);
+                handleSelectPackage('Paket Gold Imperial', 'Rp 99.000', e);
+              }}
             >
               <span>Pesan Undangan Sekarang</span>
-            </a>
+            </button>
             <p className="lp-sidebar-note">Konsultasi cepat via WhatsApp</p>
           </div>
         </aside>
@@ -420,15 +501,13 @@ export default function LandingPage() {
                 <li className="lp-disabled"><XCircle size={18} weight="fill" className="cross-icon" /> Animasi Tirai Saat Dibuka</li>
                 <li className="lp-disabled"><XCircle size={18} weight="fill" className="cross-icon" /> Formulir Konfirmasi Kehadiran</li>
               </ul>
-              <a
-                href="https://wa.me/6281225589199?text=Halo%20saya%20tertarik%20dengan%20Paket%20Silver"
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                type="button"
                 className="lp-btn lp-btn-outline lp-full-width"
-                onClick={(e) => handleSelectPackage('Paket Silver', e)}
+                onClick={(e) => handleSelectPackage('Paket Silver', 'Rp 49.000', e)}
               >
                 Pilih Paket Silver
-              </a>
+              </button>
             </div>
 
             {/* Paket Gold (Paling Populer) */}
@@ -449,15 +528,13 @@ export default function LandingPage() {
                 <li><CheckCircle size={18} weight="fill" className="check-icon" /> Konfirmasi Kehadiran &amp; Buku Tamu</li>
                 <li><CheckCircle size={18} weight="fill" className="check-icon" /> Amplop Digital &amp; Tombol Salin Rekening</li>
               </ul>
-              <a
-                href="https://wa.me/6281225589199?text=Halo%20saya%20tertarik%20dengan%20Paket%20Gold%20Imperial"
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                type="button"
                 className="lp-btn lp-btn-primary lp-full-width"
-                onClick={(e) => handleSelectPackage('Paket Gold Imperial', e)}
+                onClick={(e) => handleSelectPackage('Paket Gold Imperial', 'Rp 99.000', e)}
               >
                 Pilih Paket Gold Imperial
-              </a>
+              </button>
             </div>
 
             {/* Paket Royal Platinum */}
@@ -475,15 +552,13 @@ export default function LandingPage() {
                 <li><CheckCircle size={18} weight="fill" className="check-icon" /> Unduh Data Kehadiran &amp; Doa ke Excel</li>
                 <li><CheckCircle size={18} weight="fill" className="check-icon" /> Bantuan Pembuatan Undangan 24 Jam</li>
               </ul>
-              <a
-                href="https://wa.me/6281225589199?text=Halo%20saya%20tertarik%20dengan%20Paket%20Royal%20Platinum"
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                type="button"
                 className="lp-btn lp-btn-outline lp-full-width"
-                onClick={(e) => handleSelectPackage('Paket Royal Platinum', e)}
+                onClick={(e) => handleSelectPackage('Paket Royal Platinum', 'Rp 249.000', e)}
               >
                 Pilih Paket Royal Platinum
-              </a>
+              </button>
             </div>
           </div>
 
@@ -507,21 +582,146 @@ export default function LandingPage() {
             <h2>Wujudkan Undangan Pernikahan Impian Anda</h2>
             <p>Konsultasikan tanggal dan konsep undangan Anda bersama tim kami secara gratis melalui WhatsApp.</p>
             <div className="lp-footer-actions">
-              <a
-                href="https://wa.me/6281225589199?text=Halo%20saya%20ingin%20konsultasi%20undangan%20pernikahan"
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                type="button"
                 className="lp-btn lp-btn-primary lp-btn-large"
+                onClick={(e) => handleSelectPackage('Paket Gold Imperial', 'Rp 99.000', e)}
               >
                 <WhatsappLogo size={22} weight="fill" />
-                <span>Hubungi via WhatsApp</span>
-              </a>
+                <span>Pesan Sekarang &amp; Konsultasi</span>
+              </button>
             </div>
             <div className="lp-footer-bottom">
               <p>&copy; {new Date().getFullYear()} Digitalisasi.id. Seluruh hak cipta dilindungi undang-undang.</p>
             </div>
           </div>
         </footer>
+
+        {/* Modal Pemesanan Paket (Quick Order Sheet) */}
+        {isOrderModalOpen && (
+          <div 
+            className="lp-order-modal-backdrop" 
+            onClick={() => setIsOrderModalOpen(false)}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="order-modal-title"
+          >
+            <div 
+              className="lp-order-modal-card" 
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="lp-order-modal-header">
+                <div className="lp-order-modal-brand">
+                  <FlowerLotus size={24} weight="fill" className="lp-logo-symbol" />
+                  <div>
+                    <h3 id="order-modal-title">Formulir Pemesanan Undangan</h3>
+                    <p className="lp-order-modal-sub">Data akan langsung masuk ke panel developer</p>
+                  </div>
+                </div>
+                <button 
+                  type="button" 
+                  className="lp-order-modal-close" 
+                  onClick={() => setIsOrderModalOpen(false)}
+                  aria-label="Tutup formulir pemesanan"
+                >
+                  <X size={20} weight="bold" />
+                </button>
+              </div>
+
+              <div className="lp-order-package-banner">
+                <div className="lp-order-package-info">
+                  <span className="lp-order-package-badge">{orderPackage}</span>
+                  <span className="lp-order-package-price">{orderPrice}</span>
+                </div>
+                <p className="lp-order-package-desc">
+                  Setelah mengirim formulir, data otomatis tercatat di dashboard developer dan Anda diarahkan ke WhatsApp untuk konfirmasi detail foto &amp; acara.
+                </p>
+              </div>
+
+              <form onSubmit={handleOrderSubmit} className="lp-order-form">
+                <div className="lp-order-form-group">
+                  <label htmlFor="order-couple-name">
+                    <User size={16} weight="bold" />
+                    <span>Nama Pasangan (Panggilan) *</span>
+                  </label>
+                  <input
+                    id="order-couple-name"
+                    type="text"
+                    required
+                    placeholder="Contoh: Nadia & Agus"
+                    value={orderCoupleName}
+                    onChange={(e) => setOrderCoupleName(e.target.value)}
+                    className="lp-order-input"
+                  />
+                </div>
+
+                <div className="lp-order-form-group">
+                  <label htmlFor="order-phone">
+                    <Phone size={16} weight="bold" />
+                    <span>Nomor WhatsApp Pemesan *</span>
+                  </label>
+                  <input
+                    id="order-phone"
+                    type="tel"
+                    required
+                    placeholder="Contoh: 081234567890"
+                    value={orderPhone}
+                    onChange={(e) => setOrderPhone(e.target.value)}
+                    className="lp-order-input"
+                  />
+                </div>
+
+                <div className="lp-order-form-group">
+                  <label htmlFor="order-event-date">
+                    <CalendarBlank size={16} weight="bold" />
+                    <span>Perkiraan Tanggal Acara (Opsional)</span>
+                  </label>
+                  <input
+                    id="order-event-date"
+                    type="date"
+                    value={orderEventDate}
+                    onChange={(e) => setOrderEventDate(e.target.value)}
+                    className="lp-order-input"
+                  />
+                </div>
+
+                <div className="lp-order-form-group">
+                  <label htmlFor="order-notes">
+                    <NotePencil size={16} weight="bold" />
+                    <span>Catatan Tambahan / Konsep Acara (Opsional)</span>
+                  </label>
+                  <textarea
+                    id="order-notes"
+                    rows={3}
+                    placeholder="Contoh: Konsep modern adat Jawa, lagu latar khusus..."
+                    value={orderNotes}
+                    onChange={(e) => setOrderNotes(e.target.value)}
+                    className="lp-order-textarea"
+                  ></textarea>
+                </div>
+
+                <div className="lp-order-modal-actions">
+                  <button 
+                    type="button" 
+                    className="lp-btn lp-btn-secondary"
+                    onClick={() => setIsOrderModalOpen(false)}
+                    disabled={isSubmittingOrder}
+                  >
+                    Batal
+                  </button>
+                  <button 
+                    type="submit" 
+                    className="lp-btn lp-btn-primary lp-order-submit-btn"
+                    disabled={isSubmittingOrder}
+                  >
+                    <PaperPlaneTilt size={18} weight="bold" />
+                    <span>{isSubmittingOrder ? 'Menyimpan...' : 'Kirim Pesanan & Lanjut ke WA'}</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     </ThreeScene>
   );
