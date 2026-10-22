@@ -445,24 +445,42 @@
 }
 
 @media (max-width: 1024px) {
+  .dev-layout {
+    flex-direction: column !important;
+    width: 100% !important;
+    min-height: 100dvh !important;
+  }
   .dev-mobile-header {
-    display: flex;
+    display: flex !important;
+    width: 100% !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 60 !important;
+    box-sizing: border-box !important;
   }
   .dev-sidebar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    transform: translateX(-100%);
-    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    z-index: 70;
-    box-shadow: 10px 0 30px rgba(0, 0, 0, 0.35);
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    bottom: 0 !important;
+    width: 280px !important;
+    height: 100dvh !important;
+    transform: translateX(-100%) !important;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    z-index: 90 !important;
+    box-shadow: 10px 0 30px rgba(0, 0, 0, 0.35) !important;
   }
   .dev-sidebar.is-open {
-    transform: translateX(0);
+    transform: translateX(0) !important;
   }
   .dev-sidebar-close-btn {
-    display: flex;
+    display: flex !important;
+  }
+  .dev-main {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 1rem 0.85rem 6.5rem !important;
   }
 }
 
@@ -2477,4 +2495,298 @@
   margin-top: 0.5rem;
   line-height: 1.45;
 }
+
+/* ==========================================================================
+   17. TABLE CARD & DAFTAR UNDANGAN STYLING
+   ========================================================================== */
+
+.dev-table-card {
+  background: var(--dev-surface);
+  border: 1px solid var(--dev-border);
+  border-radius: var(--dev-radius-md);
+  box-shadow: var(--dev-shadow-subtle);
+  overflow-x: auto;
+  width: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+
+.dev-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 680px;
+  font-size: 0.85rem;
+}
+
+.dev-table th {
+  background: var(--dev-surface-subtle);
+  color: var(--dev-text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--dev-border);
+  white-space: nowrap;
+}
+
+.dev-table td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--dev-border-subtle);
+  vertical-align: middle;
+  color: var(--dev-text);
+}
+
+.dev-table tr:hover td {
+  background: rgba(184, 134, 11, 0.02);
+}
+
+.dev-couple-title {
+  display: block;
+  font-family: var(--dev-font-serif);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--dev-text);
+  line-height: 1.25;
+  margin-bottom: 0.2rem;
+}
+
+.dev-sub-meta {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--dev-text-muted);
+  font-weight: normal;
+  line-height: 1.35;
+  margin-top: 0.2rem;
+}
+
+.dev-table-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  white-space: nowrap;
+}
+
+.dev-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid var(--dev-border);
+  background: var(--dev-surface-subtle);
+  color: var(--dev-text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.dev-action-btn:hover {
+  background: var(--dev-sidebar-bg);
+  color: #fff;
+  border-color: var(--dev-sidebar-bg);
+}
+
+.dev-action-btn.edit:hover {
+  background: var(--dev-gold);
+  color: #fff;
+  border-color: var(--dev-gold);
+}
+
+.dev-action-btn.delete:hover {
+  background: var(--dev-status-danger-bg);
+  color: var(--dev-status-danger-text);
+  border-color: var(--dev-status-danger-border);
+}
+
+/* ==========================================================================
+   18. EDITOR HEADER, PRESETS & FORM GRID
+   ========================================================================== */
+
+.dev-editor-header-flex {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.dev-header-with-back {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.dev-btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--dev-text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: var(--dev-transition);
+}
+
+.dev-btn-back:hover {
+  color: var(--dev-gold);
+}
+
+.dev-presets-group {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--dev-surface-subtle);
+  padding: 0.25rem;
+  border-radius: var(--dev-radius-md);
+  border: 1px solid var(--dev-border);
+}
+
+.dev-presets-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--dev-text-muted);
+  text-transform: uppercase;
+  padding: 0 0.4rem;
+}
+
+.dev-preset-btn {
+  padding: 0.35rem 0.65rem;
+  border-radius: var(--dev-radius-sm);
+  border: none;
+  background: transparent;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--dev-text-secondary);
+  cursor: pointer;
+  transition: var(--dev-transition);
+}
+
+.dev-preset-btn:hover {
+  color: var(--dev-text);
+}
+
+.dev-preset-btn.active {
+  background: var(--dev-sidebar-bg);
+  color: #fff;
+}
+
+.dev-editor-actions-top {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.dev-editor-card {
+  background: var(--dev-surface);
+  border: 1px solid var(--dev-border);
+  border-radius: var(--dev-radius-md);
+  box-shadow: var(--dev-shadow-subtle);
+  overflow: hidden;
+}
+
+.editor-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.25rem;
+}
+
+@media (max-width: 768px) {
+  .editor-form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.text-gold {
+  color: var(--dev-gold) !important;
+}
+
+/* ==========================================================================
+   19. WHATSAPP BLAST CARD & TABLE
+   ========================================================================== */
+
+.dev-blast-card {
+  background: var(--dev-surface);
+  border: 1px solid var(--dev-border);
+  border-radius: var(--dev-radius-md);
+  padding: 1.5rem;
+  box-shadow: var(--dev-shadow-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.blast-inputs-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.blast-results-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--dev-border);
+}
+
+.blast-results-section h3 {
+  font-family: var(--dev-font-serif);
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--dev-text);
+}
+
+.blast-links-table-wrapper {
+  overflow-x: auto;
+  width: 100%;
+  -webkit-overflow-scrolling: touch;
+  border-radius: var(--dev-radius-md);
+  border: 1px solid var(--dev-border);
+}
+
+.dev-link-preview {
+  color: var(--dev-gold);
+  font-size: 0.8rem;
+  font-family: var(--dev-font-mono);
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.dev-blast-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+}
+
+.dev-btn-wa-send {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.8rem;
+  border-radius: 8px;
+  background: #25D366;
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dev-btn-wa-send:hover {
+  background: #1EBE5B;
+  transform: translateY(-1px);
+}
+
 
