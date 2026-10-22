@@ -642,9 +642,13 @@ export default function DevDashboard() {
   };
 
   const handleEdit = (couple) => {
+    const initial = getInitialFormData();
+    const quoteVal = couple.quote_text || couple.quote_teks || initial.quote_text || '';
     setFormData({
-      ...getInitialFormData(),
-      ...couple
+      ...initial,
+      ...couple,
+      quote_text: quoteVal,
+      quote_teks: quoteVal
     });
     setCurrentView('edit');
     setActiveEditorTab('profile');
@@ -680,8 +684,14 @@ export default function DevDashboard() {
   };
 
   const handleFormChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    const finalVal = type === 'checkbox' ? checked : value;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: finalVal,
+      ...(name === 'quote_text' ? { quote_teks: finalVal } : {}),
+      ...(name === 'quote_teks' ? { quote_text: finalVal } : {})
+    }));
   };
 
   // Image file upload handler
@@ -808,14 +818,20 @@ export default function DevDashboard() {
       const coupleRef = doc(db, 'couples', formData.id.trim().toLowerCase());
       
       const sanitizeFirestoreData = (val) => {
-        if (val === undefined || val === null) return null;
-        if (Array.isArray(val)) return val.map(sanitizeFirestoreData);
+        if (val === undefined || val === null) return '';
+        if (Array.isArray(val)) {
+          return val
+            .filter((item) => item !== undefined && item !== null)
+            .map((item) => (typeof item === 'object' && !(item instanceof Date) ? sanitizeFirestoreData(item) : item));
+        }
         if (val instanceof Date) return val;
         if (typeof val === 'object') {
           const cleanObj = {};
           for (const [k, v] of Object.entries(val)) {
-            if (v !== undefined) {
+            if (v !== undefined && v !== null) {
               cleanObj[k] = sanitizeFirestoreData(v);
+            } else {
+              cleanObj[k] = '';
             }
           }
           return cleanObj;
@@ -823,10 +839,11 @@ export default function DevDashboard() {
         return val;
       };
 
+      const quoteVal = formData.quote_text || formData.quote_teks || '';
       const payload = sanitizeFirestoreData({
         ...formData,
-        quote_text: formData.quote_text || formData.quote_teks || '',
-        quote_teks: formData.quote_teks || formData.quote_text || '',
+        quote_text: quoteVal,
+        quote_teks: quoteVal,
         id: formData.id.trim().toLowerCase(),
         updated_at: new Date()
       });
