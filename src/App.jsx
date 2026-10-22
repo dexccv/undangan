@@ -161,7 +161,11 @@ export default function App() {
   }, []);
 
   return (
-    <MusicProvider>
+    <MusicProvider
+      musicSource={data?.musik_url || '/assets/wedding_song.mp3'}
+      songTitle={data?.judul_lagu || 'Payung Teduh - Akad'}
+      isEnabled={data?.fitur_musik !== false}
+    >
       <ToastProvider>
         {loading ? (
           <AppSkeleton />

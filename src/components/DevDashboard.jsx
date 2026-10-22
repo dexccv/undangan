@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { auth, db, storage } from '../firebase';
 import {
   signInWithEmailAndPassword,
@@ -56,10 +56,15 @@ import {
   FlowerLotus,
   MusicNotes,
   List,
-  UploadSimple
+  UploadSimple,
+  Play,
+  Pause,
+  YoutubeLogo,
+  SpeakerHigh
 } from '@phosphor-icons/react';
 import * as XLSX from 'xlsx';
 import Swal from 'sweetalert2';
+import { getYouTubeId } from '../context/MusicContext';
 import './DevDashboard.css';
 
 export default function DevDashboard() {
@@ -86,6 +91,46 @@ export default function DevDashboard() {
   const [formData, setFormData] = useState(getInitialFormData());
   const [isSaving, setIsSaving] = useState(false);
   const [uploadingField, setUploadingField] = useState(null);
+  const [testAudioPlaying, setTestAudioPlaying] = useState(false);
+  const testAudioRef = useRef(null);
+
+  const PRESET_SONGS = [
+    {
+      title: 'Payung Teduh - Akad',
+      artist: 'Payung Teduh',
+      url: '/assets/wedding_song.mp3',
+      type: 'preset',
+      badge: 'File Audio Bawaan'
+    },
+    {
+      title: 'Kahitna - Menikahimu',
+      artist: 'Kahitna',
+      url: 'https://www.youtube.com/watch?v=F_487nC4XvI',
+      type: 'youtube',
+      badge: 'YouTube'
+    },
+    {
+      title: 'Yovie & Nuno - Janji Suci',
+      artist: 'Yovie & Nuno',
+      url: 'https://www.youtube.com/watch?v=R9_uQx3v1xY',
+      type: 'youtube',
+      badge: 'YouTube'
+    },
+    {
+      title: 'Tulus - Teman Hidup',
+      artist: 'Tulus',
+      url: 'https://www.youtube.com/watch?v=2T8uO2QvBFE',
+      type: 'youtube',
+      badge: 'YouTube'
+    },
+    {
+      title: 'Shane Filan - Beautiful In White',
+      artist: 'Shane Filan',
+      url: 'https://www.youtube.com/watch?v=XRh0yP2u_eY',
+      type: 'youtube',
+      badge: 'YouTube'
+    }
+  ];
 
   // Link Generator State
   const [selectedCoupleForLinks, setSelectedCoupleForLinks] = useState(null);
@@ -199,7 +244,13 @@ export default function DevDashboard() {
         { src: '/assets/foto2.jpg', caption: 'Langkah Bersama' },
         { src: '/assets/foto3.jpg', caption: 'Keindahan Hari Spesial' },
         { src: '/assets/foto4.jpg', caption: 'Momen Penuh Doa' }
-      ]
+      ],
+
+      fitur_musik: true,
+      musik_tipe: 'preset',
+      musik_url: '/assets/wedding_song.mp3',
+      judul_lagu: 'Payung Teduh - Akad',
+      penyanyi_lagu: 'Payung Teduh'
     };
   }
 
@@ -453,6 +504,9 @@ export default function DevDashboard() {
       lokasi_akad: order.event_location || initial.lokasi_akad || '',
       lokasi_resepsi: order.event_location || initial.lokasi_resepsi || '',
       judul_lagu: order.song_title || initial.judul_lagu || 'Payung Teduh - Akad',
+      penyanyi_lagu: order.song_artist || initial.penyanyi_lagu || 'Payung Teduh',
+      musik_url: order.song_url || initial.musik_url || '/assets/wedding_song.mp3',
+      musik_tipe: order.song_url ? (getYouTubeId(order.song_url) ? 'youtube' : 'upload') : (initial.musik_tipe || 'preset'),
 
       tanggal_cover: formattedDate || initial.tanggal_cover || '',
       tanggal_akad: order.event_date ? `${order.event_date}T08:00:00` : initial.tanggal_akad,
@@ -726,6 +780,110 @@ export default function DevDashboard() {
       reader.readAsDataURL(file);
     } finally {
       setUploadingField(null);
+    }
+  };
+
+  // Handler Unggah Berkas Musik Audio (MP3 / WAV / M4A)
+  const handleAudioUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingField('music');
+    try {
+      const storageRef = ref(storage, `couples/${formData.id || 'general'}/audio_${Date.now()}_${file.name}`);
+      const uploadRes = await uploadBytes(storageRef, file);
+      const downloadUrl = await getDownloadURL(uploadRes.ref);
+
+      const inferredTitle = file.name.replace(/\.[^/.]+$/, '');
+      setFormData((prev) => ({
+        ...prev,
+        musik_url: downloadUrl,
+        musik_tipe: 'upload',
+        judul_lagu: prev.judul_lagu || inferredTitle
+      }));
+
+      Swal.fire({
+        title: 'Berkas Lagu Berhasil Diunggah',
+        text: `Audio "${file.name}" berhasil disimpan untuk undangan ini.`,
+        icon: 'success',
+        confirmButtonColor: '#B8860B'
+      });
+    } catch (err) {
+      console.warn('Audio storage upload fallback:', err);
+      const reader = new FileReader();
+      reader.onload = () => {
+        const inferredTitle = file.name.replace(/\.[^/.]+$/, '');
+        setFormData((prev) => ({
+          ...prev,
+          musik_url: reader.result,
+          musik_tipe: 'upload',
+          judul_lagu: prev.judul_lagu || inferredTitle
+        }));
+        Swal.fire({
+          title: 'Audio Tersimpan Sementara',
+          text: 'Berkas audio dimuat secara lokal (Base64).',
+          icon: 'info',
+          confirmButtonColor: '#B8860B'
+        });
+      };
+      reader.readAsDataURL(file);
+    } finally {
+      setUploadingField(null);
+    }
+  };
+
+  // Handler Memilih Lagu Rekomendasi / Preset
+  const handleSelectPresetSong = (preset) => {
+    if (testAudioRef.current) {
+      testAudioRef.current.pause();
+      setTestAudioPlaying(false);
+    }
+    setFormData((prev) => ({
+      ...prev,
+      musik_url: preset.url,
+      musik_tipe: preset.type,
+      judul_lagu: preset.title,
+      penyanyi_lagu: preset.artist
+    }));
+    Swal.fire({
+      title: 'Lagu Diterapkan',
+      text: `Lagu "${preset.title}" siap digunakan.`,
+      icon: 'success',
+      timer: 1300,
+      showConfirmButton: false
+    });
+  };
+
+  // Handler Uji Coba Putar Musik di Dashboard
+  const handleToggleTestAudio = () => {
+    if (testAudioPlaying) {
+      if (testAudioRef.current) {
+        testAudioRef.current.pause();
+      }
+      setTestAudioPlaying(false);
+    } else {
+      const ytId = getYouTubeId(formData.musik_url);
+      if (ytId) {
+        setTestAudioPlaying(true);
+      } else {
+        const audioSrc = formData.musik_url || '/assets/wedding_song.mp3';
+        if (!testAudioRef.current) {
+          testAudioRef.current = new Audio(audioSrc);
+          testAudioRef.current.onended = () => setTestAudioPlaying(false);
+          testAudioRef.current.onerror = () => {
+            setTestAudioPlaying(false);
+            Swal.fire('Gagal Memutar Audio', 'Berkas audio tidak dapat diakses atau format tidak didukung browser.', 'error');
+          };
+        } else {
+          testAudioRef.current.src = audioSrc;
+        }
+        testAudioRef.current.play()
+          .then(() => setTestAudioPlaying(true))
+          .catch((err) => {
+            console.warn('Audio play error:', err);
+            setTestAudioPlaying(false);
+          });
+      }
     }
   };
 
@@ -1206,6 +1364,17 @@ export default function DevDashboard() {
             </button>
             <button
               type="button"
+              className={`editor-tab-btn ${activeEditorTab === 'music' ? 'active' : ''}`}
+              onClick={() => {
+                setActiveEditorTab('music');
+                setMobileSidebarOpen(false);
+              }}
+            >
+              <MusicNotes size={18} weight="duotone" />
+              <span>Musik &amp; Lagu Latar</span>
+            </button>
+            <button
+              type="button"
               className={`editor-tab-btn ${activeEditorTab === 'story' ? 'active' : ''}`}
               onClick={() => {
                 setActiveEditorTab('story');
@@ -1325,6 +1494,7 @@ export default function DevDashboard() {
               { id: 'profile', label: 'Profil Mempelai', icon: UserList },
               { id: 'events', label: 'Jadwal Acara', icon: CalendarCheck },
               { id: 'photos', label: 'Foto & Media', icon: Camera },
+              { id: 'music', label: 'Musik Latar', icon: MusicNotes },
               { id: 'story', label: 'Kisah Cinta', icon: Heart },
               { id: 'gallery', label: 'Galeri', icon: ImagesSquare },
               { id: 'accounts', label: 'Rekening', icon: CreditCard },
@@ -1850,13 +2020,290 @@ export default function DevDashboard() {
                 </div>
               )}
 
-              {/* TAB 4: KISAH CINTA */}
+              {/* TAB 4: MUSIK & LAGU LATAR */}
+              {activeEditorTab === 'music' && (
+                <div className="editor-tab-content">
+                  <div className="tab-header-flex">
+                    <div className="tab-title-area">
+                      <MusicNotes size={22} weight="duotone" className="tab-title-icon" />
+                      <h3 className="editor-tab-heading">4. Pengaturan Musik &amp; Lagu Latar</h3>
+                    </div>
+
+                    <div className="tab-header-actions">
+                      <button
+                        type="button"
+                        className={`dev-btn-test-audio ${testAudioPlaying ? 'is-playing' : ''}`}
+                        onClick={handleToggleTestAudio}
+                      >
+                        {testAudioPlaying ? (
+                          <>
+                            <Pause size={16} weight="fill" />
+                            <span>Hentikan Uji Audio</span>
+                          </>
+                        ) : (
+                          <>
+                            <Play size={16} weight="fill" />
+                            <span>Uji Putar Lagu</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Switch Otomatis Musik */}
+                  <div className="dev-music-toggle-banner">
+                    <div className="music-toggle-info">
+                      <SpeakerHigh size={22} weight="duotone" className="music-banner-icon" />
+                      <div>
+                        <strong>Fitur Musik Latar Undangan</strong>
+                        <p>Ketika aktif, lagu otomatis berputar secara halus saat tamu membuka tirai undangan.</p>
+                      </div>
+                    </div>
+                    <label className="dev-modern-switch">
+                      <input
+                        type="checkbox"
+                        name="fitur_musik"
+                        checked={formData.fitur_musik !== false}
+                        onChange={handleFormChange}
+                      />
+                      <span className="dev-switch-slider"></span>
+                    </label>
+                  </div>
+
+                  {/* Selector Tipe Sumber Musik */}
+                  <div className="dev-music-source-tabs">
+                    <button
+                      type="button"
+                      className={`dev-music-tab-item ${formData.musik_tipe === 'upload' ? 'is-active' : ''}`}
+                      onClick={() => setFormData((prev) => ({ ...prev, musik_tipe: 'upload' }))}
+                    >
+                      <UploadSimple size={16} weight="bold" />
+                      <span>Unggah File Audio Sendiri</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={`dev-music-tab-item ${formData.musik_tipe === 'youtube' ? 'is-active' : ''}`}
+                      onClick={() => setFormData((prev) => ({ ...prev, musik_tipe: 'youtube' }))}
+                    >
+                      <YoutubeLogo size={18} weight="fill" className="yt-icon-red" />
+                      <span>Gunakan Link YouTube</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={`dev-music-tab-item ${formData.musik_tipe === 'preset' ? 'is-active' : ''}`}
+                      onClick={() => setFormData((prev) => ({ ...prev, musik_tipe: 'preset' }))}
+                    >
+                      <Sparkle size={16} weight="duotone" />
+                      <span>Pilihan Lagu Rekomendasi</span>
+                    </button>
+                  </div>
+
+                  {/* Konten Berdasarkan Pilihan */}
+                  {formData.musik_tipe === 'upload' && (
+                    <div className="dev-music-panel-card">
+                      <h4>Unggah Berkas Audio (MP3 / WAV / M4A)</h4>
+                      <p className="tab-sub-caption">
+                        Unggah lagu dari laptop atau ponsel Anda. Berkas akan otomatis disimpan di cloud storage undangan.
+                      </p>
+
+                      <div className="dev-audio-dropzone">
+                        <label className="dev-audio-upload-box">
+                          <UploadSimple size={32} weight="duotone" className="audio-upload-icon" />
+                          <span className="audio-upload-label">
+                            {uploadingField === 'music' ? 'Sedang Mengunggah Audio...' : 'Klik untuk Memilih File Audio (MP3 / WAV)'}
+                          </span>
+                          <span className="audio-upload-hint">Maksimal 15MB • Format MP3, M4A, WAV, AAC</span>
+                          <input
+                            type="file"
+                            accept="audio/*,.mp3,.wav,.m4a,.ogg"
+                            onChange={handleAudioUpload}
+                            className="sr-only"
+                            disabled={uploadingField === 'music'}
+                          />
+                        </label>
+                      </div>
+
+                      <div className="dev-input-group full-width" style={{ marginTop: '1rem' }}>
+                        <label>Atau Tempel Tautan Langsung Berkas Audio (URL MP3)</label>
+                        <input
+                          type="text"
+                          name="musik_url"
+                          value={formData.musik_url || ''}
+                          onChange={handleFormChange}
+                          placeholder="https://domain.com/musik-pengantin.mp3"
+                          className="dev-field"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {formData.musik_tipe === 'youtube' && (
+                    <div className="dev-music-panel-card">
+                      <div className="yt-panel-heading">
+                        <YoutubeLogo size={24} weight="fill" className="yt-icon-red" />
+                        <div>
+                          <h4>Gunakan Musik dari YouTube</h4>
+                          <p className="tab-sub-caption">
+                            Cukup salin dan tempel link video / lagu dari YouTube apa saja.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="dev-input-group full-width">
+                        <label>Tautan URL YouTube</label>
+                        <input
+                          type="text"
+                          name="musik_url"
+                          value={formData.musik_url || ''}
+                          onChange={handleFormChange}
+                          placeholder="Contoh: https://www.youtube.com/watch?v=F_487nC4XvI atau https://youtu.be/..."
+                          className="dev-field"
+                        />
+                      </div>
+
+                      {/* YouTube Detection Badge & Preview */}
+                      {getYouTubeId(formData.musik_url) ? (
+                        <div className="dev-yt-detected-box">
+                          <div className="yt-thumb-wrap">
+                            <img
+                              src={`https://img.youtube.com/vi/${getYouTubeId(formData.musik_url)}/hqdefault.jpg`}
+                              alt="YouTube Thumbnail"
+                              className="yt-detected-thumb"
+                            />
+                            <div className="yt-detected-badge">
+                              <CheckCircle size={15} weight="bold" />
+                              <span>Link YouTube Terdeteksi</span>
+                            </div>
+                          </div>
+                          <div className="yt-detected-details">
+                            <span className="yt-id-tag">ID Video: <strong>{getYouTubeId(formData.musik_url)}</strong></span>
+                            <p>Lagu ini akan diputar di latar belakang saat tamu membuka undangan tanpa mengganggu tampilan.</p>
+                            <a
+                              href={`https://www.youtube.com/watch?v=${getYouTubeId(formData.musik_url)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="dev-btn-secondary dev-btn-sm"
+                            >
+                              <LinkSimple size={14} weight="bold" />
+                              <span>Buka di YouTube</span>
+                            </a>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="dev-yt-helper-box">
+                          <p>
+                            <strong>Format link YouTube yang didukung:</strong><br />
+                            • <code>https://www.youtube.com/watch?v=...</code><br />
+                            • <code>https://youtu.be/...</code><br />
+                            • <code>https://music.youtube.com/watch?v=...</code>
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {formData.musik_tipe === 'preset' && (
+                    <div className="dev-music-panel-card">
+                      <h4>Pilihan Lagu Romantis Bawaan</h4>
+                      <p className="tab-sub-caption">
+                        Pilih salah satu lagu pernikahan terpopuler berikut untuk langsung diterapkan secara instan:
+                      </p>
+
+                      <div className="dev-preset-songs-grid">
+                        {PRESET_SONGS.map((song) => {
+                          const isSelected = formData.musik_url === song.url;
+                          return (
+                            <div
+                              key={song.url}
+                              className={`dev-preset-song-card ${isSelected ? 'is-selected' : ''}`}
+                              onClick={() => handleSelectPresetSong(song)}
+                            >
+                              <div className="preset-song-icon-wrap">
+                                {song.type === 'youtube' ? (
+                                  <YoutubeLogo size={20} weight="fill" className="yt-icon-red" />
+                                ) : (
+                                  <MusicNotes size={20} weight="duotone" className="preset-note-icon" />
+                                )}
+                              </div>
+                              <div className="preset-song-info">
+                                <span className="preset-song-title">{song.title}</span>
+                                <span className="preset-song-artist">{song.artist}</span>
+                              </div>
+                              <span className="preset-song-badge">{song.badge}</span>
+                              {isSelected && (
+                                <span className="preset-active-check">
+                                  <Check size={14} weight="bold" />
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Metadata Judul & Penyanyi */}
+                  <div className="dev-form-grid" style={{ marginTop: '1.5rem' }}>
+                    <div className="dev-input-group">
+                      <label>Judul Lagu yang Ditampilkan</label>
+                      <input
+                        type="text"
+                        name="judul_lagu"
+                        value={formData.judul_lagu || ''}
+                        onChange={handleFormChange}
+                        placeholder="Contoh: Akad"
+                        className="dev-field"
+                      />
+                    </div>
+
+                    <div className="dev-input-group">
+                      <label>Nama Penyanyi / Musisi</label>
+                      <input
+                        type="text"
+                        name="penyanyi_lagu"
+                        value={formData.penyanyi_lagu || ''}
+                        onChange={handleFormChange}
+                        placeholder="Contoh: Payung Teduh"
+                        className="dev-field"
+                      />
+                    </div>
+                  </div>
+
+                  {/* YouTube In-Dashboard Mini Tester if playing and type is YouTube */}
+                  {testAudioPlaying && getYouTubeId(formData.musik_url) && (
+                    <div className="dev-yt-inline-tester">
+                      <div className="yt-inline-header">
+                        <SpeakerHigh size={18} weight="duotone" />
+                        <span>Sedang Memutar Uji Coba Audio YouTube</span>
+                        <button
+                          type="button"
+                          className="dev-btn-close-yt"
+                          onClick={() => setTestAudioPlaying(false)}
+                        >
+                          <X size={15} />
+                        </button>
+                      </div>
+                      <iframe
+                        width="100%"
+                        height="180"
+                        src={`https://www.youtube.com/embed/${getYouTubeId(formData.musik_url)}?autoplay=1&controls=1`}
+                        title="Uji Coba YouTube Player"
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      ></iframe>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* TAB 5: KISAH CINTA */}
               {activeEditorTab === 'story' && (
                 <div className="editor-tab-content">
                   <div className="tab-header-flex">
                     <div className="tab-title-area">
                       <Heart size={22} weight="duotone" className="tab-title-icon" />
-                      <h3 className="editor-tab-heading">4. Perjalanan Kisah Cinta</h3>
+                      <h3 className="editor-tab-heading">5. Perjalanan Kisah Cinta</h3>
                     </div>
                     <button type="button" className="dev-btn-secondary" onClick={handleAddStory}>
                       <Plus size={16} weight="bold" />
@@ -1989,7 +2436,7 @@ export default function DevDashboard() {
                     <div>
                       <div className="tab-title-area">
                         <ImagesSquare size={22} weight="duotone" className="tab-title-icon" />
-                        <h3 className="editor-tab-heading">5. Galeri Foto Prewedding</h3>
+                        <h3 className="editor-tab-heading">6. Galeri Foto Prewedding</h3>
                       </div>
                       <p className="tab-sub-caption">
                         Jumlah Foto Tersedia: <strong>{(formData.foto_galeri || []).length} Foto</strong>
@@ -2050,12 +2497,12 @@ export default function DevDashboard() {
                 </div>
               )}
 
-              {/* TAB 6: REKENING & HADIAH */}
+              {/* TAB 7: REKENING & HADIAH */}
               {activeEditorTab === 'accounts' && (
                 <div className="editor-tab-content">
                   <div className="tab-title-area">
                     <CreditCard size={22} weight="duotone" className="tab-title-icon" />
-                    <h3 className="editor-tab-heading">6. Amplop Digital &amp; Pengiriman Hadiah</h3>
+                    <h3 className="editor-tab-heading">7. Amplop Digital &amp; Pengiriman Hadiah</h3>
                   </div>
 
                   <div className="editor-form-grid">
@@ -2177,7 +2624,7 @@ export default function DevDashboard() {
                 </div>
               )}
 
-              {/* TAB 7: PRATINJAU LAYAR */}
+              {/* TAB 8: PRATINJAU LAYAR */}
               {activeEditorTab === 'preview' && (
                 <div className="editor-tab-content">
                   <div className="preview-top-toolbar">
@@ -2245,13 +2692,13 @@ export default function DevDashboard() {
                 </div>
               )}
 
-              {/* TAB 8: KEHADIRAN & DOA */}
+              {/* TAB 9: KEHADIRAN & DOA */}
               {activeEditorTab === 'monitor' && (
                 <div className="editor-tab-content">
                   <div className="tab-header-flex">
                     <div className="tab-title-area">
                       <ChartLineUp size={22} weight="duotone" className="tab-title-icon" />
-                      <h3 className="editor-tab-heading">8. Data Konfirmasi Kehadiran &amp; Doa Tamu</h3>
+                      <h3 className="editor-tab-heading">9. Data Konfirmasi Kehadiran &amp; Doa Tamu</h3>
                     </div>
                     <div className="export-actions">
                       <button type="button" className="dev-btn-secondary" onClick={exportRsvpToExcel}>
