@@ -114,13 +114,14 @@
   color: #FFFFFF;
   display: flex;
   flex-direction: column;
-  padding: 1.75rem 1.25rem;
+  padding: 1.5rem 1.25rem;
   flex-shrink: 0;
   border-right: 1px solid var(--dev-sidebar-border);
   position: sticky;
   top: 0;
   height: 100vh;
   height: 100dvh;
+  box-sizing: border-box;
   overflow-y: auto;
   z-index: 40;
 }
@@ -129,9 +130,10 @@
   display: flex;
   align-items: center;
   gap: 0.85rem;
-  padding-bottom: 1.5rem;
-  margin-bottom: 1.5rem;
+  padding-bottom: 1.25rem;
+  margin-bottom: 1.25rem;
   border-bottom: 1px solid var(--dev-sidebar-border);
+  flex-shrink: 0;
 }
 
 .dev-brand-icon-box {
@@ -1135,16 +1137,10 @@
 }
 
 .dev-order-card-body {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: 1.25rem;
-}
-
-@media (max-width: 768px) {
-  .dev-order-card-body {
-    grid-template-columns: 1fr;
-  }
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  width: 100%;
 }
 
 .dev-order-receipt-thumb {
@@ -2150,14 +2146,16 @@
    16. ORDERS SPECIFIC CARDS & HELPERS (Compatibility & Polish)
    ========================================================================== */
 
+.dev-orders-metrics-grid,
 .dev-stat-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 1rem;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.5rem;
 }
 
 @media (max-width: 768px) {
+  .dev-orders-metrics-grid,
   .dev-stat-grid {
     grid-template-columns: 1fr;
     gap: 0.75rem;
