@@ -1,40 +1,40 @@
 import React, { useState, useEffect } from 'react';
 import { auth, db, storage } from '../firebase';
-import { 
-  signInWithEmailAndPassword, 
-  onAuthStateChanged, 
-  signOut 
+import {
+  signInWithEmailAndPassword,
+  onAuthStateChanged,
+  signOut
 } from 'firebase/auth';
-import { 
-  collection, 
-  getDocs, 
-  doc, 
-  setDoc, 
+import {
+  collection,
+  getDocs,
+  doc,
+  setDoc,
   deleteDoc,
   query,
   orderBy
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { 
-  UserList, 
-  CalendarCheck, 
-  Camera, 
-  Heart, 
-  ImagesSquare, 
-  CreditCard, 
-  Eye, 
-  ChartLineUp, 
-  PaperPlaneRight, 
-  Trash, 
-  PencilSimple, 
-  Plus, 
-  Export, 
-  Copy, 
-  Check, 
-  SignOut, 
-  SignIn, 
-  DeviceMobile, 
-  DeviceTablet, 
+import {
+  UserList,
+  CalendarCheck,
+  Camera,
+  Heart,
+  ImagesSquare,
+  CreditCard,
+  Eye,
+  ChartLineUp,
+  PaperPlaneRight,
+  Trash,
+  PencilSimple,
+  Plus,
+  Export,
+  Copy,
+  Check,
+  SignOut,
+  SignIn,
+  DeviceMobile,
+  DeviceTablet,
   Desktop,
   ArrowLeft,
   FlowerLotus,
@@ -826,7 +826,7 @@ export default function DevDashboard() {
                     <UserList size={22} weight="duotone" className="tab-title-icon" />
                     <h3 className="editor-tab-heading">1. Profil &amp; Keluarga Mempelai</h3>
                   </div>
-                  
+
                   <div className="editor-form-grid">
                     <div className="dev-input-group full-width">
                       <label>Nama Tautan Undangan (Wajib diisi, huruf kecil tanpa spasi)</label>
@@ -967,7 +967,7 @@ export default function DevDashboard() {
                     <CalendarCheck size={22} weight="duotone" className="tab-title-icon" />
                     <h3 className="editor-tab-heading">2. Jadwal Acara (Akad &amp; Resepsi)</h3>
                   </div>
-                  
+
                   <div className="editor-form-grid">
                     <div className="dev-input-group full-width">
                       <label>Tanggal yang Tampil di Halaman Awal (Cover)</label>
@@ -1107,7 +1107,7 @@ export default function DevDashboard() {
                     <Camera size={22} weight="duotone" className="tab-title-icon" />
                     <h3 className="editor-tab-heading">3. Foto &amp; Media Utama</h3>
                   </div>
-                  
+
                   <div className="dev-photos-grid">
                     {[
                       { key: 'foto_cover', label: 'Foto Halaman Awal & Tirai' },
@@ -1362,7 +1362,7 @@ export default function DevDashboard() {
                     <CreditCard size={22} weight="duotone" className="tab-title-icon" />
                     <h3 className="editor-tab-heading">6. Amplop Digital &amp; Pengiriman Hadiah</h3>
                   </div>
-                  
+
                   <div className="editor-form-grid">
                     {/* Rekening Wanita */}
                     <div className="dev-section-divider-box full-width">
@@ -1714,7 +1714,7 @@ export default function DevDashboard() {
                     rows={6}
                     value={rawGuestList}
                     onChange={(e) => setRawGuestList(e.target.value)}
-                    placeholder="Bpk. Hendra Wijaya, 6281234567890&#10;Ibu Siti Aminah, 6289876543210&#10;Dimas Anggara"
+                    placeholder="Bpk. Hendra Wijaya, 6281225589199&#10;Ibu Siti Aminah, 6289876543210&#10;Dimas Anggara"
                     className="dev-field"
                   ></textarea>
                 </div>

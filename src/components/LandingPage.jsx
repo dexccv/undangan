@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
-import { 
-  Sparkle, 
-  Lightning, 
-  MusicNotes, 
-  BookOpen, 
-  CheckCircle, 
-  XCircle, 
-  List, 
-  X, 
-  ArrowRight, 
-  Eye, 
+import {
+  Sparkle,
+  Lightning,
+  MusicNotes,
+  BookOpen,
+  CheckCircle,
+  XCircle,
+  List,
+  X,
+  ArrowRight,
+  Eye,
   WhatsappLogo,
   FlowerLotus,
   Disc,
@@ -97,13 +97,32 @@ export default function LandingPage() {
     }
   }, []);
 
+  // Kunci scroll body saat sidebar mobile terbuka & tutup via tombol Escape
+  React.useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && mobileMenuOpen) {
+        setMobileMenuOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [mobileMenuOpen]);
+
   const handleSelectPackage = (packageName, e) => {
     if (e) {
       e.preventDefault();
       e.stopPropagation();
     }
     const text = encodeURIComponent(`Halo, saya tertarik memesan ${packageName} di Digitalisasi.id`);
-    const waUrl = `https://wa.me/6281234567890?text=${text}`;
+    const waUrl = `https://wa.me/6281225589199?text=${text}`;
     window.open(waUrl, '_blank', 'noopener,noreferrer');
   };
 
@@ -126,10 +145,10 @@ export default function LandingPage() {
                 <Eye size={16} weight="bold" />
                 <span>Lihat Contoh Undangan</span>
               </a>
-              <a 
-                href="https://wa.me/6281234567890?text=Halo%20saya%20tertarik%20membuat%20undangan%20digital"
+              <a
+                href="https://wa.me/6281225589199?text=Halo%20saya%20tertarik%20membuat%20undangan%20digital"
                 target="_blank"
-                rel="noopener noreferrer" 
+                rel="noopener noreferrer"
                 className="lp-btn lp-btn-outline"
               >
                 Konsultasi WhatsApp
@@ -140,31 +159,81 @@ export default function LandingPage() {
             <button
               type="button"
               className="lp-hamburger-btn"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              aria-label={mobileMenuOpen ? 'Tutup menu navigasi' : 'Buka menu navigasi'}
+              onClick={() => setMobileMenuOpen(true)}
+              aria-label="Buka menu navigasi"
+              aria-expanded={mobileMenuOpen}
             >
-              {mobileMenuOpen ? <X size={26} weight="bold" /> : <List size={26} weight="bold" />}
+              <List size={26} weight="bold" />
+            </button>
+          </div>
+        </header>
+
+        {/* Mobile Backdrop Overlay (Smooth Fade) */}
+        <div
+          className={`lp-mobile-backdrop ${mobileMenuOpen ? 'is-open' : ''}`}
+          onClick={() => setMobileMenuOpen(false)}
+          aria-hidden={!mobileMenuOpen}
+        />
+
+        {/* Mobile Sidebar (Smooth Slide-in from Right) */}
+        <aside
+          className={`lp-mobile-sidebar ${mobileMenuOpen ? 'is-open' : ''}`}
+          aria-label="Menu Navigasi Mobile"
+          aria-hidden={!mobileMenuOpen}
+        >
+          <div className="lp-sidebar-header">
+            <div className="lp-sidebar-brand">
+              <FlowerLotus size={22} weight="fill" className="lp-logo-symbol" />
+              <span>Digitalisasi.id</span>
+            </div>
+            <button
+              type="button"
+              className="lp-sidebar-close-btn"
+              onClick={() => setMobileMenuOpen(false)}
+              aria-label="Tutup menu navigasi"
+            >
+              <X size={22} weight="bold" />
             </button>
           </div>
 
-          {/* Mobile Drawer */}
-          {mobileMenuOpen && (
-            <div className="lp-mobile-drawer">
-              <a href="#features" onClick={(e) => scrollToSection(e, 'features')}>Fitur Lengkap</a>
-              <a href="#pricing" onClick={(e) => scrollToSection(e, 'pricing')}>Pilihan Paket</a>
-              <a href="/?id=demo" onClick={() => setMobileMenuOpen(false)}>Lihat Contoh Undangan</a>
-              <a 
-                href="https://wa.me/6281234567890" 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="lp-btn lp-btn-primary"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Pesan Undangan Sekarang
-              </a>
-            </div>
-          )}
-        </header>
+          <nav className="lp-sidebar-nav">
+            <a
+              href="#features"
+              className="lp-sidebar-link"
+              onClick={(e) => scrollToSection(e, 'features')}
+            >
+              <span>Fitur Lengkap</span>
+            </a>
+            <a
+              href="#pricing"
+              className="lp-sidebar-link"
+              onClick={(e) => scrollToSection(e, 'pricing')}
+            >
+              <span>Pilihan Paket</span>
+            </a>
+            <a
+              href="/?id=demo"
+              className="lp-sidebar-link lp-sidebar-link-highlight"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <Eye size={18} weight="bold" />
+              <span>Lihat Contoh Undangan</span>
+            </a>
+          </nav>
+
+          <div className="lp-sidebar-footer">
+            <a
+              href="https://wa.me/6281225589199?text=Halo%20saya%20tertarik%20membuat%20undangan%20digital"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="lp-btn lp-btn-primary lp-full-width lp-btn-sidebar"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <span>Pesan Undangan Sekarang</span>
+            </a>
+            <p className="lp-sidebar-note">Konsultasi cepat via WhatsApp</p>
+          </div>
+        </aside>
 
         {/* Hero Section */}
         <section className="lp-hero">
@@ -212,7 +281,7 @@ export default function LandingPage() {
             <div className="lp-phone-frame">
               <div className="lp-phone-notch"></div>
               <div className="lp-phone-screen">
-                <div 
+                <div
                   className="lp-mock-wedding-cover"
                   style={{ backgroundImage: 'url(/assets/foto1.jpg)' }}
                 >
@@ -298,30 +367,30 @@ export default function LandingPage() {
           <div className="lp-section-header">
             <h2 className="lp-section-title">Investasi untuk Hari Bahagia Anda</h2>
             <p className="lp-section-sub">Pilih paket terbaik yang sesuai dengan konsep dan skala acara pernikahan Anda:</p>
-            
+
             {/* Mobile Package Tab Selector */}
             <div className="lp-pricing-mobile-nav" role="tablist" aria-label="Pilihan Paket Undangan">
-              <button 
-                type="button" 
-                role="tab" 
+              <button
+                type="button"
+                role="tab"
                 aria-selected={activePackageIndex === 0}
                 className={`lp-pkg-tab ${activePackageIndex === 0 ? 'is-active' : ''}`}
                 onClick={() => scrollToPackage(0)}
               >
                 Silver
               </button>
-              <button 
-                type="button" 
-                role="tab" 
+              <button
+                type="button"
+                role="tab"
                 aria-selected={activePackageIndex === 1}
                 className={`lp-pkg-tab ${activePackageIndex === 1 ? 'is-active' : ''}`}
                 onClick={() => scrollToPackage(1)}
               >
                 Gold Imperial
               </button>
-              <button 
-                type="button" 
-                role="tab" 
+              <button
+                type="button"
+                role="tab"
                 aria-selected={activePackageIndex === 2}
                 className={`lp-pkg-tab ${activePackageIndex === 2 ? 'is-active' : ''}`}
                 onClick={() => scrollToPackage(2)}
@@ -331,9 +400,9 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <div 
-            className="lp-pricing-grid" 
-            ref={pricingGridRef} 
+          <div
+            className="lp-pricing-grid"
+            ref={pricingGridRef}
             onScroll={handlePricingScroll}
           >
             {/* Paket Silver */}
@@ -351,8 +420,8 @@ export default function LandingPage() {
                 <li className="lp-disabled"><XCircle size={18} weight="fill" className="cross-icon" /> Animasi Tirai Saat Dibuka</li>
                 <li className="lp-disabled"><XCircle size={18} weight="fill" className="cross-icon" /> Formulir Konfirmasi Kehadiran</li>
               </ul>
-              <a 
-                href="https://wa.me/6281234567890?text=Halo%20saya%20tertarik%20dengan%20Paket%20Silver" 
+              <a
+                href="https://wa.me/6281225589199?text=Halo%20saya%20tertarik%20dengan%20Paket%20Silver"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="lp-btn lp-btn-outline lp-full-width"
@@ -380,8 +449,8 @@ export default function LandingPage() {
                 <li><CheckCircle size={18} weight="fill" className="check-icon" /> Konfirmasi Kehadiran &amp; Buku Tamu</li>
                 <li><CheckCircle size={18} weight="fill" className="check-icon" /> Amplop Digital &amp; Tombol Salin Rekening</li>
               </ul>
-              <a 
-                href="https://wa.me/6281234567890?text=Halo%20saya%20tertarik%20dengan%20Paket%20Gold%20Imperial" 
+              <a
+                href="https://wa.me/6281225589199?text=Halo%20saya%20tertarik%20dengan%20Paket%20Gold%20Imperial"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="lp-btn lp-btn-primary lp-full-width"
@@ -406,8 +475,8 @@ export default function LandingPage() {
                 <li><CheckCircle size={18} weight="fill" className="check-icon" /> Unduh Data Kehadiran &amp; Doa ke Excel</li>
                 <li><CheckCircle size={18} weight="fill" className="check-icon" /> Bantuan Pembuatan Undangan 24 Jam</li>
               </ul>
-              <a 
-                href="https://wa.me/6281234567890?text=Halo%20saya%20tertarik%20dengan%20Paket%20Royal%20Platinum" 
+              <a
+                href="https://wa.me/6281225589199?text=Halo%20saya%20tertarik%20dengan%20Paket%20Royal%20Platinum"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="lp-btn lp-btn-outline lp-full-width"
@@ -438,8 +507,8 @@ export default function LandingPage() {
             <h2>Wujudkan Undangan Pernikahan Impian Anda</h2>
             <p>Konsultasikan tanggal dan konsep undangan Anda bersama tim kami secara gratis melalui WhatsApp.</p>
             <div className="lp-footer-actions">
-              <a 
-                href="https://wa.me/6281234567890?text=Halo%20saya%20ingin%20konsultasi%20undangan%20pernikahan" 
+              <a
+                href="https://wa.me/6281225589199?text=Halo%20saya%20ingin%20konsultasi%20undangan%20pernikahan"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="lp-btn lp-btn-primary lp-btn-large"
