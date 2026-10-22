@@ -22,6 +22,81 @@ export function getYouTubeId(url) {
   return match ? match[1] : null;
 }
 
+/**
+ * Fetch YouTube video title and author/artist via oEmbed API (CORS enabled)
+ * and smartly parses 'Artist - Song' or 'Author'
+ */
+export async function fetchYouTubeMetadata(url) {
+  const ytId = getYouTubeId(url);
+  if (!ytId) return null;
+
+  try {
+    let data = null;
+    try {
+      const res = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${ytId}`);
+      if (res.ok) {
+        data = await res.json();
+      }
+    } catch (e) {
+      // ignore & try fallback
+    }
+
+    if (!data || !data.title || data.error) {
+      // Fallback via CORS proxy
+      try {
+        const proxyRes = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${ytId}&format=json`)}`);
+        if (proxyRes.ok) {
+          data = await proxyRes.json();
+        }
+      } catch (err) {
+        // ignore
+      }
+    }
+
+    if (!data || !data.title || data.error) return null;
+
+    const rawTitle = data.title || '';
+    const rawAuthor = data.author_name || '';
+
+    let cleaned = rawTitle
+      .replace(/\s*[\(\[](?:official\s*(?:music\s*)?video|video\s*clip|official\s*audio|audio|lirik\s*(?:video)?|lyrics?(?:\s*video)?|lyric\s*video|mv|hd|4k.*?)[\)\]]/gi, '')
+      .trim();
+
+    let author = rawAuthor
+      .replace(/\s*-\s*Topic$/i, '')
+      .replace(/\s*(?:VEVO|Official(?:\s*Channel)?|Channel)$/i, '')
+      .trim();
+
+    let artist = author;
+    let songTitle = cleaned;
+
+    if (cleaned.includes(' - ')) {
+      const parts = cleaned.split(' - ');
+      artist = parts[0].trim();
+      songTitle = parts.slice(1).join(' - ').trim();
+    } else if (cleaned.includes(' – ')) {
+      const parts = cleaned.split(' – ');
+      artist = parts[0].trim();
+      songTitle = parts.slice(1).join(' – ').trim();
+    }
+
+    // Display title: e.g. 'Payung Teduh - Akad'
+    const displayTitle = artist && songTitle && !songTitle.toLowerCase().includes(artist.toLowerCase())
+      ? `${artist} - ${songTitle}`
+      : cleaned;
+
+    return {
+      displayTitle,
+      songTitle,
+      artist: artist || author,
+      rawTitle
+    };
+  } catch (err) {
+    console.warn('Failed to fetch YouTube metadata:', err);
+    return null;
+  }
+}
+
 // Global script loader for YouTube IFrame API
 let ytApiPromise = null;
 function loadYouTubeIframeApi() {

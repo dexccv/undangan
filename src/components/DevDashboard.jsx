@@ -60,11 +60,12 @@ import {
   Play,
   Pause,
   YoutubeLogo,
-  SpeakerHigh
+  SpeakerHigh,
+  ArrowClockwise
 } from '@phosphor-icons/react';
 import * as XLSX from 'xlsx';
 import Swal from 'sweetalert2';
-import { getYouTubeId } from '../context/MusicContext';
+import { getYouTubeId, fetchYouTubeMetadata } from '../context/MusicContext';
 import './DevDashboard.css';
 
 export default function DevDashboard() {
@@ -92,6 +93,7 @@ export default function DevDashboard() {
   const [isSaving, setIsSaving] = useState(false);
   const [uploadingField, setUploadingField] = useState(null);
   const [testAudioPlaying, setTestAudioPlaying] = useState(false);
+  const [isFetchingYtMeta, setIsFetchingYtMeta] = useState(false);
   const testAudioRef = useRef(null);
 
   const PRESET_SONGS = [
@@ -884,6 +886,57 @@ export default function DevDashboard() {
             setTestAudioPlaying(false);
           });
       }
+    }
+  };
+
+  // Otomatis Ambil & Perbarui Metadata YouTube (Judul Lagu & Nama Penyanyi)
+  const fetchAndUpdateYouTubeInfo = async (url) => {
+    const ytId = getYouTubeId(url);
+    if (!ytId) return;
+
+    setIsFetchingYtMeta(true);
+    try {
+      const meta = await fetchYouTubeMetadata(url);
+      if (meta && meta.displayTitle) {
+        setFormData((prev) => ({
+          ...prev,
+          judul_lagu: meta.displayTitle,
+          penyanyi_lagu: meta.artist || prev.penyanyi_lagu || ''
+        }));
+
+        Swal.fire({
+          toast: true,
+          position: 'top-end',
+          icon: 'success',
+          title: 'Info Lagu Otomatis Diperbarui!',
+          text: `${meta.displayTitle}`,
+          showConfirmButton: false,
+          timer: 2400
+        });
+      }
+    } catch (err) {
+      console.warn('Error fetching YouTube info:', err);
+    } finally {
+      setIsFetchingYtMeta(false);
+    }
+  };
+
+  const handleYouTubeUrlChange = (e) => {
+    const url = e.target.value;
+    setFormData((prev) => ({ ...prev, musik_url: url }));
+
+    const ytId = getYouTubeId(url);
+    if (ytId) {
+      fetchAndUpdateYouTubeInfo(url);
+    }
+  };
+
+  const handleYouTubeUrlPaste = (e) => {
+    const pasted = e.clipboardData?.getData('text') || '';
+    if (getYouTubeId(pasted)) {
+      setTimeout(() => {
+        fetchAndUpdateYouTubeInfo(pasted);
+      }, 60);
     }
   };
 
@@ -2150,15 +2203,36 @@ export default function DevDashboard() {
                       </div>
 
                       <div className="dev-input-group full-width">
-                        <label>Tautan URL YouTube</label>
+                        <div className="dev-label-with-action">
+                          <label>Tautan URL YouTube</label>
+                          {formData.musik_url && getYouTubeId(formData.musik_url) && (
+                            <button
+                              type="button"
+                              className="dev-btn-text-action"
+                              onClick={() => fetchAndUpdateYouTubeInfo(formData.musik_url)}
+                              disabled={isFetchingYtMeta}
+                              title="Ambil ulang nama lagu & penyanyi dari link ini"
+                            >
+                              <ArrowClockwise size={13} weight="bold" className={isFetchingYtMeta ? 'spinning-fast' : ''} />
+                              <span>{isFetchingYtMeta ? 'Mengambil Info...' : 'Sinkronkan Info Lagu'}</span>
+                            </button>
+                          )}
+                        </div>
                         <input
                           type="text"
                           name="musik_url"
                           value={formData.musik_url || ''}
-                          onChange={handleFormChange}
-                          placeholder="Contoh: https://www.youtube.com/watch?v=F_487nC4XvI atau https://youtu.be/..."
+                          onChange={handleYouTubeUrlChange}
+                          onPaste={handleYouTubeUrlPaste}
+                          placeholder="Tempel link: https://www.youtube.com/watch?v=... atau https://youtu.be/..."
                           className="dev-field"
                         />
+                        {isFetchingYtMeta && (
+                          <span className="dev-fetch-meta-hint">
+                            <span className="spinner-dot"></span>
+                            Sedang mengambil judul lagu &amp; nama penyanyi dari YouTube secara otomatis...
+                          </span>
+                        )}
                       </div>
 
                       {/* YouTube Detection Badge & Preview */}
@@ -2177,16 +2251,36 @@ export default function DevDashboard() {
                           </div>
                           <div className="yt-detected-details">
                             <span className="yt-id-tag">ID Video: <strong>{getYouTubeId(formData.musik_url)}</strong></span>
+                            {formData.judul_lagu && (
+                              <div className="yt-auto-detected-song">
+                                <span className="auto-detected-label">Judul &amp; Penyanyi Terdeteksi:</span>
+                                <strong className="auto-detected-val">{formData.judul_lagu}</strong>
+                                {formData.penyanyi_lagu && (
+                                  <span className="auto-detected-artist"> ({formData.penyanyi_lagu})</span>
+                                )}
+                              </div>
+                            )}
                             <p>Lagu ini akan diputar di latar belakang saat tamu membuka undangan tanpa mengganggu tampilan.</p>
-                            <a
-                              href={`https://www.youtube.com/watch?v=${getYouTubeId(formData.musik_url)}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="dev-btn-secondary dev-btn-sm"
-                            >
-                              <LinkSimple size={14} weight="bold" />
-                              <span>Buka di YouTube</span>
-                            </a>
+                            <div className="yt-detected-actions">
+                              <a
+                                href={`https://www.youtube.com/watch?v=${getYouTubeId(formData.musik_url)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="dev-btn-secondary dev-btn-sm"
+                              >
+                                <LinkSimple size={14} weight="bold" />
+                                <span>Buka di YouTube</span>
+                              </a>
+                              <button
+                                type="button"
+                                className="dev-btn-secondary dev-btn-sm"
+                                onClick={() => fetchAndUpdateYouTubeInfo(formData.musik_url)}
+                                disabled={isFetchingYtMeta}
+                              >
+                                <ArrowClockwise size={14} weight="bold" className={isFetchingYtMeta ? 'spinning-fast' : ''} />
+                                <span>{isFetchingYtMeta ? 'Mengambil Info...' : 'Ambil Ulang Info YouTube'}</span>
+                              </button>
+                            </div>
                           </div>
                         </div>
                       ) : (
@@ -2195,7 +2289,8 @@ export default function DevDashboard() {
                             <strong>Format link YouTube yang didukung:</strong><br />
                             • <code>https://www.youtube.com/watch?v=...</code><br />
                             • <code>https://youtu.be/...</code><br />
-                            • <code>https://music.youtube.com/watch?v=...</code>
+                            • <code>https://music.youtube.com/watch?v=...</code><br />
+                            <em>Nama lagu dan penyanyi di bawah akan otomatis terisi saat tautan ditempel!</em>
                           </p>
                         </div>
                       )}
@@ -2245,28 +2340,42 @@ export default function DevDashboard() {
                   {/* Metadata Judul & Penyanyi */}
                   <div className="dev-form-grid" style={{ marginTop: '1.5rem' }}>
                     <div className="dev-input-group">
-                      <label>Judul Lagu yang Ditampilkan</label>
+                      <div className="dev-label-with-action">
+                        <label>Judul Lagu yang Ditampilkan</label>
+                        {formData.musik_tipe === 'youtube' && (
+                          <span className="dev-auto-badge">Auto dari YouTube</span>
+                        )}
+                      </div>
                       <input
                         type="text"
                         name="judul_lagu"
                         value={formData.judul_lagu || ''}
                         onChange={handleFormChange}
-                        placeholder="Contoh: Akad"
-                        className="dev-field"
+                        placeholder={isFetchingYtMeta ? "Mengambil judul dari YouTube..." : "Contoh: Akad"}
+                        className={`dev-field ${isFetchingYtMeta ? 'is-syncing' : ''}`}
                       />
                     </div>
 
                     <div className="dev-input-group">
-                      <label>Nama Penyanyi / Musisi</label>
+                      <div className="dev-label-with-action">
+                        <label>Nama Penyanyi / Musisi</label>
+                        {formData.musik_tipe === 'youtube' && (
+                          <span className="dev-auto-badge">Auto dari YouTube</span>
+                        )}
+                      </div>
                       <input
                         type="text"
                         name="penyanyi_lagu"
                         value={formData.penyanyi_lagu || ''}
                         onChange={handleFormChange}
-                        placeholder="Contoh: Payung Teduh"
-                        className="dev-field"
+                        placeholder={isFetchingYtMeta ? "Mengambil artis dari YouTube..." : "Contoh: Payung Teduh"}
+                        className={`dev-field ${isFetchingYtMeta ? 'is-syncing' : ''}`}
                       />
                     </div>
+
+                    <p className="tab-sub-caption full-width" style={{ marginTop: '0.25rem' }}>
+                      Tip: Kedua kolom di atas otomatis terisi begitu Anda menempelkan tautan YouTube, dan tetap dapat Anda sesuaikan atau ganti kapan saja.
+                    </p>
                   </div>
 
                   {/* YouTube In-Dashboard Mini Tester if playing and type is YouTube */}

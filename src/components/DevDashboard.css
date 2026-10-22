@@ -2624,3 +2624,121 @@
   }
 }
 
+.dev-label-with-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.35rem;
+}
+
+.dev-label-with-action label {
+  margin-bottom: 0 !important;
+}
+
+.dev-btn-text-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: none;
+  border: none;
+  color: #B8860B;
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.dev-btn-text-action:hover:not(:disabled) {
+  background: rgba(184, 134, 11, 0.1);
+}
+
+.dev-btn-text-action:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.dev-fetch-meta-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  color: #B8860B;
+  margin-top: 0.4rem;
+  font-weight: 600;
+  animation: fadeInMusic 0.2s ease;
+}
+
+.spinner-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #B8860B;
+  display: inline-block;
+  animation: pulseDot 1s infinite alternate;
+}
+
+@keyframes pulseDot {
+  0% { transform: scale(0.6); opacity: 0.4; }
+  100% { transform: scale(1.2); opacity: 1; }
+}
+
+.spinning-fast {
+  animation: spinVinyl 0.8s linear infinite;
+}
+
+.dev-auto-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.15rem 0.45rem;
+  background: rgba(184, 134, 11, 0.12);
+  color: #B8860B;
+  border-radius: 6px;
+  border: 1px solid rgba(184, 134, 11, 0.2);
+}
+
+.is-syncing {
+  border-color: #B8860B !important;
+  background: #FDFBF7 !important;
+  box-shadow: 0 0 0 3px rgba(184, 134, 11, 0.12) !important;
+}
+
+.yt-auto-detected-song {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  background: #FFFFFF;
+  border: 1px solid rgba(184, 134, 11, 0.2);
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+}
+
+.auto-detected-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--dev-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.auto-detected-val {
+  font-size: 0.88rem;
+  color: #1C1814;
+  font-weight: 700;
+}
+
+.auto-detected-artist {
+  font-size: 0.78rem;
+  color: var(--dev-gold);
+  font-weight: 600;
+}
+
+.yt-detected-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.35rem;
+}
+
