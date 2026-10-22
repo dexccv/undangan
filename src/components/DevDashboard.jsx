@@ -2945,7 +2945,7 @@ export default function DevDashboard() {
                   <button
                     type="button"
                     className="dev-btn-gold dev-btn-sm"
-                    onClick={handleSaveCouple}
+                    onClick={handleSave}
                     disabled={isSaving}
                   >
                     {isSaving ? (
