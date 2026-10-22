@@ -1,6 +1,6 @@
 # Platform Undangan Digital & Panel Pengelola (Digitalisasi.id)
 
-Platform aplikasi web undangan pernikahan digital berbasis React dan Vite dengan arsitektur multi-tenant dinamis, animasi panggung interaktif (GSAP & Three.js), sistem manajemen konten mandiri (CMS Dashboard), integrasi Google Firebase (Firestore, Storage, Authentication), serta generator tautan pengiriman massal WhatsApp.
+Platform aplikasi web undangan pernikahan digital berbasis React dan Vite dengan arsitektur multi-tenant dinamis, animasi panggung interaktif (GSAP & Three.js), sistem manajemen konten mandiri (CMS Developer Dashboard), pemutar musik hybrid (Upload Audio & YouTube Link), integrasi Google Firebase (Firestore, Storage, Authentication), serta generator tautan pengiriman massal WhatsApp.
 
 ---
 
@@ -9,13 +9,15 @@ Platform aplikasi web undangan pernikahan digital berbasis React dan Vite dengan
 - [Ikhtisar Arsitektur](#ikhtisar-arsitektur)
 - [Pembaruan dan Fitur Utama](#pembaruan-dan-fitur-utama)
   - [1. Pengalaman Tamu Undangan (Guest Experience)](#1-pengalaman-tamu-undangan-guest-experience)
-  - [2. Halaman Utama Berkedalaman Visual (Landing Page)](#2-halaman-utama-berkedalaman-visual-landing-page)
-  - [3. Panel Pengelola Komprehensif (Management Dashboard)](#3-panel-pengelola-komprehensif-management-dashboard)
+  - [2. Mesin Musik Latar Hybrid (Audio Upload & YouTube)](#2-mesin-musik-latar-hybrid-audio-upload--youtube)
+  - [3. Halaman Utama Berkedalaman Visual (Landing Page)](#3-halaman-utama-berkedalaman-visual-landing-page)
+  - [4. Panel Pengelola Komprehensif (Developer Dashboard)](#4-panel-pengelola-komprehensif-developer-dashboard)
+  - [5. Sistem Manajemen Pesanan & Smart Chat Parser](#5-sistem-manajemen-pesanan--smart-chat-parser)
 - [Tumpukan Teknologi (Tech Stack)](#tumpukan-teknologi-tech-stack)
 - [Struktur Direktori Proyek](#struktur-direktori-proyek)
 - [Struktur Database & Penyimpanan Berkas](#struktur-database--penyimpanan-berkas)
   - [Cloud Firestore (NoSQL Database)](#cloud-firestore-nosql-database)
-  - [Firebase Storage (Penyimpanan Berkas Gambar)](#firebase-storage-penyimpanan-berkas-gambar)
+  - [Firebase Storage (Penyimpanan Berkas Gambar & Audio)](#firebase-storage-penyimpanan-berkas-gambar--audio)
 - [Panduan Instalasi & Pengembangan Lokal](#panduan-instalasi--pengembangan-lokal)
   - [Prasyarat](#prasyarat)
   - [Langkah Pemasangan](#langkah-pemasangan)
@@ -32,7 +34,7 @@ Aplikasi ini menggunakan pola arsitektur berbasis komponen tunggal (*Single Page
 - `/?id={nama-tautan}&to={nama-tamu}`: Membuka undangan pernikahan spesifik untuk tamu yang dituju dengan personalisasi nama dan konten khusus pasangan.
 - `/?id=demo`: Membuka mode demonstrasi undangan dengan data contoh lengkap (Nadia & Agus).
 - `/?id=dev`: Membuka antarmuka autentikasi dan panel kendali pengelola (*Executive Management Dashboard*).
-- `/`: Membuka halaman utama (*Landing Page*) pemasaran publik.
+- `/`: Membuka halaman utama (*Landing Page*) pemasaran publik dan alur pemesanan paket undangan.
 
 ---
 
@@ -44,33 +46,60 @@ Aplikasi ini menggunakan pola arsitektur berbasis komponen tunggal (*Single Page
 - **Personalisasi Tamu Dinamis:** Kartu sampul secara otomatis membaca parameter URL `to` dan menampilkan nama tamu terhormat secara presisi.
 - **Kisah Perjalanan Cinta Dinamis (Love Story Milestones):** Rangkaian tonggak sejarah pertemuan dan komitmen pasangan yang dirender dinamis dari koleksi dokumen database, lengkap dengan foto pendukung, tahun, dan uraian naratif.
 - **Galeri Foto Prewedding Bento & Modal Lightbox:** Susunan tata letak bento grid responsif dengan fitur perbesaran foto (*modal lightbox zoom*).
-- **Pemutar Musik Latar Mengambang (Audio Context Engine):** Sistem pemutar instrumen musik terintegrasi dengan tombol kendali melayang dan visual piringan vinyl berputar.
 - **Konfirmasi Kehadiran & Buku Doa Restu Real-Time:** Formulir pencatatan kehadiran tamu dan ucapan doa restu yang tersinkronisasi langsung ke sub-koleksi Cloud Firestore secara seketika (*real-time listener*).
 - **Amplop Digital & Salin Rekening:** Fasilitas transfer hadiah pernikahan nontunai dengan fungsi salin nomor rekening bank dalam satu kali klik beserta notifikasi toast.
 - **Petunjuk Lokasi & Integrasi Google Maps:** Peta digital dan tombol navigasi langsung menuju lokasi akad nikah dan resepsi.
 
-### 2. Halaman Utama Berkedalaman Visual (Landing Page)
+---
+
+### 2. Mesin Musik Latar Hybrid (Audio Upload & YouTube)
+
+- **Dukungan Ganda (Hybrid Audio Engine):**
+  - **Berkas Audio:** Memutar berkas audio lokal maupun cloud (`.mp3`, `.wav`, `.m4a`, `.ogg`) dengan *looping* mulus menggunakan HTML5 Audio API.
+  - **Tautan YouTube:** Memutar video/lagu dari tautan YouTube apa saja (`youtube.com/watch`, `youtu.be`, `music.youtube.com`, `shorts`) di latar belakang menggunakan *YouTube IFrame Player API* tanpa mengganggu visual layar.
+- **Otomasi Pemutaran:** Musik otomatis mulai diputar secara lembut seketika tamu menekan tombol **"Buka Undangan"** pada tirai awal.
+- **Floating Vinyl Player ([MusicPlayer.jsx](file:///d:/PROJECT/undangan-main/src/components/MusicPlayer.jsx)):** Tombol piringan hitam (*vinyl disc*) melayang dengan animasi putaran kontinu saat musik aktif, dilengkapi tombol jeda/putar dan *info pill* judul lagu serta artis.
+
+---
+
+### 3. Halaman Utama Berkedalaman Visual (Landing Page)
 
 - **Multi-Layer Atmospheric Depth:** Latar belakang bertingkat yang menggabungkan rona dasar *Warm Champagne Ivory*, dua bola pencahayaan *ambient aura mesh* (Emas & Sage lembut), garis kisi arsitektural (*architectural grid lines* 64px), serta lapisan tekstur mikro kertas (*tactile film grain* SVG data-URI) tanpa membebani kartu grafis (GPU).
 - **Floating Titanium Smartphone Showcase:** Area hero editorial split dua kolom yang memuat tiruan ponsel pintar titanium tiga dimensi dengan takik dinamis (*dynamic island*), pratinjau kartu undangan langsung, dan dua lencana mengambang (*live confirmation pulse* dan *music status*).
 - **Double-Bezel Card Architecture:** Kartu fitur dan paket harga (Silver, Gold Imperial, Royal Platinum) mengadopsi konstruksi bingkai berlapis dengan sorotan cahaya dalam (*inset highlight*).
-- **Lencana Pembuktian Sosial (Trust Strip):** Rangkuman metrik kepercayaan di bawah tombol ajakan bertindak (CTA).
+- **Alur Pemesanan Interaktif:**
+  - Formulir rincian pengantin, tanggal acara, lokasi, hingga judul lagu yang diinginkan.
+  - Tampilan instruksi pembayaran QRIS otomatis.
+  - Pengunggahan bukti transfer pembayaran.
+  - Tombol pengarah langsung ke kontak WhatsApp Developer (`081225589199`).
 
-### 3. Panel Pengelola Komprehensif (Management Dashboard)
+---
 
-- **Keamanan Autentikasi Admin:** Dilindungi gerbang masuk Firebase Authentication dengan enkripsi kata sandi.
-- **Executive Topbar & Studio Canvas:** Bilah atas pemantauan status koneksi server, jumlah pasangan aktif, serta tautan cepat ke pratinjau undangan.
-- **Editor Data Pasangan (8 Tab Fungsional):**
-  1. *Profil Mempelai:* Data nama lengkap, nama panggilan, orang tua, akun media sosial, serta kutipan ayat/sumber.
+### 4. Panel Pengelola Komprehensif (Developer Dashboard)
+
+- **Keamanan Autentikasi Admin:** Dilindungi gerbang masuk Firebase Authentication dengan enkripsi kata sandi dan opsi bypass pengembang lokal.
+- **Executive Topbar & Studio Canvas:** Bilah atas pemantauan status koneksi server, jumlah pasangan aktif, indikator pesanan baru masuk, serta tautan cepat ke pratinjau undangan.
+- **Editor Data Pasangan (9 Tab Terstruktur):**
+  1. *Profil Mempelai:* Data nama lengkap, nama panggilan, orang tua, akun media sosial, serta kutipan doa dan sumber ayat.
   2. *Jadwal Acara:* Waktu, tanggal, dan alamat presisi akad nikah serta resepsi.
-  3. *Foto & Media:* Slot pengunggahan gambar beresolusi tinggi untuk sampul, kutipan, mempelai, lokasi, dan penutup.
-  4. *Perjalanan Kisah Cinta:* Manajemen fase cerita lengkap dengan pratinjau foto, tombol pengunggahan langsung ke Firebase Storage, pilihan cepat aset lokal (*preset chips*), dan input tautan URL manual.
-  5. *Galeri Foto Prewedding:* Penambahan dan pengurangan koleksi foto album dengan tombol unggah terintegrasi dan keterangan takarir (*caption*).
-  6. *Rekening & Hadiah:* Data nomor rekening, bank tujuan, penerima kado fisik, dan alamat kirim.
-  7. *Pratinjau Layar (Device Frame Switcher):* Peninjauan tampilan undangan secara langsung dalam frame Ponsel (390px), Tablet (768px), atau Komputer Desktop (100%).
-  8. *Kehadiran & Doa Tamu:* Pemantauan daftar tamu yang hadir/berhalangan serta daftar ucapan doa.
-- **Ekspor Data ke Microsoft Excel:** Kemampuan mengekspor seluruh daftar konfirmasi kehadiran dan ucapan tamu ke dalam berkas format `.xlsx` menggunakan SheetJS.
-- **Generator Tautan Undangan & Kirim WhatsApp Massal:** Generator otomatis yang mengurai daftar nama tamu dan menghasilkan tautan personalisasi instan beserta pesan salam terformat untuk dikirimkan melalui WhatsApp dalam satu klik.
+  3. *Foto & Media:* Slot pengunggahan gambar resolusi tinggi untuk sampul, tirai, kutipan, mempelai, tempat acara, dan penutup.
+  4. *Musik & Lagu Latar:* Pilihan sumber musik (unggah audio sendiri, tempel link YouTube, atau pilih preset rekomendasi), input judul lagu dan musisi, serta tombol uji coba audio instan.
+  5. *Perjalanan Kisah Cinta:* Manajemen fase cerita lengkap dengan pratinjau foto, tombol pengunggahan berkas, pilihan cepat foto bawaan, dan input tautan URL manual.
+  6. *Galeri Foto Prewedding:* Penambahan dan pengurangan koleksi foto album dengan tombol unggah terintegrasi dan keterangan foto (*caption*).
+  7. *Rekening & Hadiah:* Data nomor rekening, bank tujuan, penerima kado fisik, dan alamat kirim.
+  8. *Pratinjau Layar (Responsive Device Frame):* Peninjauan tampilan undangan langsung dalam bingkai realistis Ponsel (390px dengan takik ponsel dinamis), Tablet (768px), atau Komputer Desktop (100%), lengkap dengan input simulasi nama tamu.
+  9. *Kehadiran & Doa Tamu:* Pemantauan daftar tamu yang hadir/berhalangan serta daftar ucapan doa.
+- **Ekspor Data ke Microsoft Excel:** Kemampuan mengekspor seluruh daftar konfirmasi kehadiran dan ucapan doa tamu ke format `.xlsx` menggunakan SheetJS.
+- **Generator Tautan Undangan & Kirim WhatsApp Massal:** Pengurai otomatis daftar nama tamu untuk menghasilkan tautan personalisasi instan beserta pesan salam terformat yang siap dikirim via WhatsApp.
+- **Ketahanan Penyimpanan Firestore:** Sanitasi otomatis rekursif seluruh data formulir sebelum dieksekusi oleh `setDoc()`, mencegah eror `undefined field value`.
+
+---
+
+### 5. Sistem Manajemen Pesanan & Smart Chat Parser
+
+- **Daftar Pesanan Masuk:** Pengelola dapat meninjau seluruh pesanan yang masuk dari Landing Page, memfilter status (Semua, Menunggu Pembayaran, Sedang Diproses, Selesai), dan mengunduh bukti transfer gambar.
+- **Konversi Pesanan Satu Klik:** Tombol *"Buat Undangan dari Pesanan Ini"* yang langsung memetakan data pesanan ke formulir editor undangan lengkap dengan paket fitur otomatis.
+- **Smart Chat Parser:** Fasilitas cerdas untuk menyalin teks rincian pernikahan dari obrolan WhatsApp calon pengantin dan mengekstrak nama mempelai, orang tua, tanggal, lokasi, serta rekening ke kolom formulir secara otomatis.
 
 ---
 
@@ -81,15 +110,15 @@ Aplikasi ini menggunakan pola arsitektur berbasis komponen tunggal (*Single Page
 | **Frontend Framework** | React 19 / React DOM | Pembangunan UI modular berbasis komponen fungsional |
 | **Build Tooling** | Vite 8 | Kompilasi kilat modul ES dan optimasi bundel produksi |
 | **Animasi & Interaksi** | GSAP (GreenSock) | Animasi pembukaan tirai teater berpresisi tinggi |
-| **Animasi Deklaratif** | Motion (Framer Motion) | Transisi halaman dan pergerakan elemen antar-komponen |
-| **Grafika 3D Ambient** | Three.js & @react-three/fiber | Cincin geometri ambient dan partikel debu melayang |
-| **Backend & Basis Data** | Google Cloud Firestore | Basis data NoSQL dokumen untuk pasangan, tamu, dan doa |
-| **Penyimpanan Berkas** | Google Firebase Storage | Penyimpanan berkas foto resolusi tinggi terenkripsi |
-| **Autentikasi** | Google Firebase Auth | Manajemen sesi pengelola panel |
+| **Grafika 3D Ambient** | Three.js | Cincin geometri ambient dan partikel debu halus |
+| **Backend & Basis Data** | Google Cloud Firestore | Basis data NoSQL dokumen untuk pasangan, pesanan, tamu, dan doa |
+| **Penyimpanan Berkas** | Google Firebase Storage | Penyimpanan berkas foto dan audio resolusi tinggi terenkripsi |
+| **Autentikasi** | Google Firebase Auth | Manajemen sesi login pengelola panel |
+| **Mesin Audio Hybrid** | HTML5 Audio & YouTube IFrame API | Pemutaran musik latar mulus dari berkas lokal atau YouTube |
 | **Ikonografi** | @phosphor-icons/react | Seluruh ikon grafis konsisten tanpa emoji mentah |
 | **Olah Data Spreadsheet**| SheetJS (xlsx) | Ekspor data tabular konfirmasi kehadiran tamu ke Excel |
-| **Notifikasi Dialog** | SweetAlert2 | Modal konfirmasi penghapusan dan notifikasi status |
-| **Efek Visual Partikel** | canvas-confetti | Hamburan konfeti saat tamu mengonfirmasi kehadiran |
+| **Notifikasi Dialog** | SweetAlert2 | Modal konfirmasi dan notifikasi status interaktif |
+| **Efek Visual Partikel** | canvas-confetti | Hamburan konfeti saat tamu membuka tirai undangan |
 
 ---
 
@@ -98,24 +127,31 @@ Aplikasi ini menggunakan pola arsitektur berbasis komponen tunggal (*Single Page
 ```text
 undangan-main/
 ├── public/
-│   ├── assets/                 # Aset berkas gambar statis, musik mp3, dan ikon
+│   ├── assets/                 # Berkas gambar statis, foto mempelai, musik mp3, dan ikon
 │   └── favicon.ico
 ├── src/
 │   ├── components/
-│   │   ├── CurtainReveal.jsx   # Komponen tirai pembuka megah (GSAP)
+│   │   ├── CurtainReveal.jsx   # Komponen tirai pembuka megah (GSAP & Confetti)
 │   │   ├── CurtainReveal.css   # Lembar gaya tirai teater dan efek shimmer
-│   │   ├── DevDashboard.jsx    # Panel pengelola lengkap (8 Tab Editor & Blast WA)
-│   │   ├── DevDashboard.css    # Gaya studio eksekutif, topbar, dan kartu berlapis
-│   │   ├── LandingPage.jsx     # Halaman depan editorial dengan mockup ponsel
+│   │   ├── DevDashboard.jsx    # Panel pengelola lengkap (9 Tab Editor, Pesanan, & WA Blast)
+│   │   ├── DevDashboard.css    # Gaya studio pengelola, topbar, frame ponsel, & kartu
+│   │   ├── LandingPage.jsx     # Halaman depan editorial dengan showcase mockup ponsel & form order
 │   │   ├── LandingPage.css     # Gaya ambient aura mesh, kisi arsitektur, dan film grain
-│   │   ├── ThreeScene.jsx      # Lapisan latar grafika Three.js non-blocking
-│   │   ├── AudioController.jsx # Pemutar musik latar mengambang
-│   │   ├── BentoGallery.jsx    # Galeri foto tata letak bento & modal pembesar
-│   │   ├── LoveStory.jsx       # Garis waktu perjalanan kisah cinta dinamis
-│   │   ├── RSVPSection.jsx     # Formulir konfirmasi kehadiran dan buku tamu
-│   │   └── Toast.jsx           # Notifikasi umpan balik sementara
+│   │   ├── ThreeScene.jsx      # Lapisan latar grafika Three.js ambient
+│   │   ├── MusicPlayer.jsx     # Pemutar vinyl melayang dengan info pill lagu
+│   │   ├── Cover.jsx           # Bagian sampul utama undangan
+│   │   ├── Quotes.jsx          # Bagian kutipan doa dan ayat suci
+│   │   ├── Parents.jsx         # Profil kedua mempelai dan orang tua
+│   │   ├── CountdownAndEvents.jsx # Jadwal akad, resepsi, dan hitung mundur
+│   │   ├── Story.jsx           # Rangkaian linimasa kisah perjalanan cinta
+│   │   ├── Gallery.jsx         # Galeri foto prewedding bento grid & lightbox
+│   │   ├── RSVP.jsx            # Formulir konfirmasi kehadiran tamu
+│   │   ├── Guestbook.jsx       # Buku doa restu tamu undangan
+│   │   ├── Gift.jsx            # Amplop digital dan alamat pengiriman kado
+│   │   ├── Closing.jsx         # Penutup undangan dan ungkapan terima kasih
+│   │   └── ui/                 # Komponen antarmuka pembantu (ScrollReveal, Skeleton)
 │   ├── context/
-│   │   ├── AudioContext.jsx    # State global pemutaran audio
+│   │   ├── MusicContext.jsx    # Mesin musik global (HTML5 Audio + YouTube IFrame API)
 │   │   └── ToastContext.jsx    # State global antrean notifikasi toast
 │   ├── firebase.js             # Inisialisasi Firebase App, Firestore, Auth, Storage
 │   ├── App.jsx                 # Pengatur rute URL parameter & pemanggilan data
@@ -123,7 +159,7 @@ undangan-main/
 │   ├── index.css               # Variabel CSS global, reset browser, dan tipografi
 │   └── main.jsx                # Titik masuk utama aplikasi React
 ├── index.html                  # Berkas HTML utama Vite
-├── vite.config.js              # Konfigurasi Vite (izin host eksternal & tunnel)
+├── vite.config.js              # Konfigurasi Vite
 └── package.json                # Dependensi pustaka dan skrip perintah proyek
 ```
 
@@ -146,6 +182,9 @@ couples/ {coupleId}
   ├── pria_lengkap: string
   ├── pria_ortu: string
   ├── pria_ig: string
+  ├── quote_text: string
+  ├── quote_teks: string
+  ├── quote_source: string
   ├── tanggal_cover: string
   ├── tanggal_akad: string (format ISO)
   ├── waktu_akad: string
@@ -171,6 +210,12 @@ couples/ {coupleId}
   ├── an_pria: string
   ├── alamat_kado: string
   ├── penerima_kado: string
+  ├── fitur_musik: boolean
+  ├── musik_tipe: string ("upload" | "youtube" | "preset")
+  ├── musik_url: string
+  ├── judul_lagu: string
+  ├── penyanyi_lagu: string
+  ├── paket_pesanan: string
   ├── love_story: array [
   │     { year: string, title: string, desc: string, foto: string }
   │   ]
@@ -183,18 +228,37 @@ couples/ {coupleId}
   │
   └── [Sub-Koleksi] invitations/{coupleId}/guestbook/
         └── {wishId}: { name, message, timestamp }
+
+orders/ {orderId}
+  ├── id: string
+  ├── customer_name: string
+  ├── customer_phone: string
+  ├── bride_name: string
+  ├── groom_name: string
+  ├── package_name: string
+  ├── package_price: number
+  ├── event_date: string
+  ├── event_location: string
+  ├── song_title: string
+  ├── payment_proof: string (URL Storage)
+  ├── status: string ("pending" | "processing" | "completed")
+  └── created_at: timestamp
 ```
 
-### Firebase Storage (Penyimpanan Berkas Gambar)
+### Firebase Storage (Penyimpanan Berkas Gambar & Audio)
 
-Berkas foto yang diunggah oleh pengelola melalui panel kendali disimpan pada bucket penyimpanan Firebase dengan skema hierarki berikut:
+Berkas foto dan audio yang diunggah melalui panel kendali disimpan pada bucket penyimpanan Firebase dengan skema hierarki berikut:
 
 ```text
 couples/
   └── {coupleId}/
-        ├── cover_{timestamp}_{filename}.jpg
-        ├── story_{index}_{timestamp}_{filename}.jpg
-        └── gallery_{index}_{timestamp}_{filename}.jpg
+        ├── audio_{timestamp}_{filename}.mp3   # Berkas lagu latar
+        ├── cover_{timestamp}_{filename}.jpg   # Foto sampul utama
+        ├── story_{index}_{timestamp}_{filename}.jpg # Foto linimasa kisah cinta
+        └── gallery_{index}_{timestamp}_{filename}.jpg # Foto album prewedding
+
+payment_proofs/
+  └── proof_{timestamp}_{filename}.jpg         # Bukti transfer pembayaran pesanan
 ```
 
 ---
@@ -205,7 +269,7 @@ couples/
 
 - Node.js versi 18.0 atau lebih tinggi
 - Pengelola paket `npm` atau `pnpm`
-- Peramban web modern yang mendukung WebGL dan CSS Backdrop Filter
+- Peramban web modern yang mendukung WebGL, HTML5 Audio, dan CSS Backdrop Filter
 
 ### Langkah Pemasangan
 
@@ -256,9 +320,10 @@ Hasil kompilasi siap diterapkan (*deploy*) pada direktori `dist/` menuju layanan
 Platform ini secara ketat mematuhi pedoman desain antarmuka bermutu tinggi:
 
 1. **Bebas Karakter Emoji Mentah:** Seluruh visual indikator dan simbol navigasi menggunakan ikon berbasis vektor SVG dari `@phosphor-icons/react` untuk menjaga kesan mewah dan profesional.
-2. **Keterbacaan Bahasa Awam:** Istilah teknis yang membingungkan orang awam telah digantikan dengan padanan bahasa Indonesia yang ramah (contoh: *Konfirmasi Kehadiran* menggantikan *RSVP*, *Nama Tautan* menggantikan *Slug/ID*, *Jumlah Hadir* menggantikan *Pax*).
+2. **Keterbacaan Bahasa Awam:** Istilah teknis digantikan dengan padanan bahasa Indonesia yang ramah (contoh: *Konfirmasi Kehadiran* menggantikan *RSVP*, *Nama Tautan* menggantikan *Slug/ID*, *Jumlah Hadir* menggantikan *Pax*).
 3. **Kinerja Bebas Hambatan (Non-Blocking Performance):** Efek grafika latar Three.js dan tekstur noise dijalankan dengan isolasi `pointer-events: none` dan parameter memori terkontrol untuk menjaga kestabilan 60 FPS saat digulir pada layar ponsel.
-4. **Ketahanan Tata Letak Seluler:** Menggunakan unit ketinggian dinamis (`min-height: 100dvh`) untuk mencegah pemotongan bilah navigasi peramban ponsel pada sistem iOS dan Android.
+4. **Ketahanan Tata Letak Seluler:** Menggunakan unit ketinggian dinamis (`min-height: 100dvh`) dan penanganan *overflow* fleksibel untuk mencegah pemotongan bilah navigasi peramban ponsel pada sistem iOS dan Android.
+5. **Sanitasi Data Anti-Crash:** Seluruh mutasi dokumen ke Cloud Firestore dilengkapi filter sanitasi data otomatis untuk mencegah terkirimnya nilai `undefined` yang dapat memicu eror server.
 
 ---
 
