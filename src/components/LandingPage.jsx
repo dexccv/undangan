@@ -32,7 +32,9 @@ import {
   Quotes,
   UploadSimple,
   QrCode,
-  Check
+  Check,
+  MagnifyingGlass,
+  SpinnerGap
 } from '@phosphor-icons/react';
 import ThreeScene from './ThreeScene';
 import './LandingPage.css';
@@ -87,6 +89,7 @@ export default function LandingPage() {
   const [mapPickedAddress, setMapPickedAddress] = useState('');
   const [mapPickedCoords, setMapPickedCoords] = useState({ lat: -6.2088, lon: 106.8456 }); // Default Jabodetabek
   const [isResolvingMapAddress, setIsResolvingMapAddress] = useState(false);
+  const [isSearchingMap, setIsSearchingMap] = useState(false);
   const mapContainerRef = React.useRef(null);
   const leafletMapInstanceRef = React.useRef(null);
   const leafletMarkerRef = React.useRef(null);
@@ -508,23 +511,34 @@ export default function LandingPage() {
   };
 
   const handleSearchOnMap = async (queryText) => {
-    if (!queryText.trim()) return;
+    const query = queryText ? queryText.trim() : '';
+    if (!query) {
+      Swal.fire({
+        title: 'Ketik Lokasi',
+        text: 'Silakan ketik nama gedung, masjid, hotel, jalan, atau daerah di Indonesia.',
+        icon: 'info',
+        confirmButtonColor: '#B8860B',
+        timer: 2500
+      });
+      return;
+    }
+
+    setIsSearchingMap(true);
     setIsResolvingMapAddress(true);
     try {
       let foundLat = null;
       let foundLon = null;
       let foundName = '';
 
+      // 1. Coba Photon Komoot (dengan bbox wilayah Indonesia)
       try {
         const pRes = await fetch(
-          `https://photon.komoot.io/api/?q=${encodeURIComponent(queryText)}&bbox=95.0,-11.0,141.0,6.0&limit=5&lang=id`
+          `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&bbox=95.0,-11.0,141.0,6.0&limit=5&lang=id`
         );
         const pData = await pRes.json();
         const validFeature = pData?.features?.find((feat) => {
-          const p = feat.properties;
           const [lon, lat] = feat.geometry.coordinates;
-          const isIdCountry = p.countrycode?.toUpperCase() === 'ID' || p.country?.toLowerCase() === 'indonesia';
-          return isIdCountry && isLocationInIndonesia(lat, lon);
+          return isLocationInIndonesia(lat, lon);
         });
 
         if (validFeature) {
@@ -536,34 +550,64 @@ export default function LandingPage() {
             validFeature.properties.state
           ].filter(Boolean).join(', ');
         }
-      } catch (err) {}
+      } catch (err) {
+        console.warn('Photon map search error:', err);
+      }
 
+      // 2. Fallback Nominatim OpenStreetMap (countrycodes=id)
       if (!foundLat) {
-        const osmRes = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryText)}&countrycodes=id&limit=3&addressdetails=1`
-        );
-        const osmData = await osmRes.json();
-        if (Array.isArray(osmData) && osmData.length > 0) {
-          const validOsm = osmData.find((item) => isLocationInIndonesia(parseFloat(item.lat), parseFloat(item.lon)));
-          if (validOsm) {
-            foundLat = parseFloat(validOsm.lat);
-            foundLon = parseFloat(validOsm.lon);
-            foundName = validOsm.display_name;
+        try {
+          const osmRes = await fetch(
+            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=id&limit=5&addressdetails=1`
+          );
+          const osmData = await osmRes.json();
+          if (Array.isArray(osmData) && osmData.length > 0) {
+            const validOsm = osmData.find((item) => isLocationInIndonesia(parseFloat(item.lat), parseFloat(item.lon)));
+            if (validOsm) {
+              foundLat = parseFloat(validOsm.lat);
+              foundLon = parseFloat(validOsm.lon);
+              foundName = validOsm.display_name;
+            }
           }
+        } catch (err) {
+          console.warn('Nominatim map search error:', err);
+        }
+      }
+
+      // 3. Fallback kedua: Tambahkan "Indonesia" pada query jika belum ketemu
+      if (!foundLat && !query.toLowerCase().includes('indonesia')) {
+        try {
+          const osmRes2 = await fetch(
+            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + ' Indonesia')}&countrycodes=id&limit=5&addressdetails=1`
+          );
+          const osmData2 = await osmRes2.json();
+          if (Array.isArray(osmData2) && osmData2.length > 0) {
+            const validOsm2 = osmData2.find((item) => isLocationInIndonesia(parseFloat(item.lat), parseFloat(item.lon)));
+            if (validOsm2) {
+              foundLat = parseFloat(validOsm2.lat);
+              foundLon = parseFloat(validOsm2.lon);
+              foundName = validOsm2.display_name;
+            }
+          }
+        } catch (err) {
+          console.warn('Nominatim fallback error:', err);
         }
       }
 
       if (foundLat && foundLon) {
         setMapPickedCoords({ lat: foundLat, lon: foundLon });
-        setMapPickedAddress(foundName);
-        if (leafletMapInstanceRef.current && leafletMarkerRef.current) {
-          leafletMapInstanceRef.current.setView([foundLat, foundLon], 16);
+        setMapPickedAddress(foundName || 'Titik Terpilih');
+        if (leafletMapInstanceRef.current) {
+          leafletMapInstanceRef.current.invalidateSize();
+          leafletMapInstanceRef.current.setView([foundLat, foundLon], 16, { animate: true });
+        }
+        if (leafletMarkerRef.current) {
           leafletMarkerRef.current.setLatLng([foundLat, foundLon]);
         }
       } else {
         Swal.fire({
           title: 'Lokasi Tidak Ditemukan di Indonesia',
-          text: 'Pencarian dibatasi khusus untuk wilayah Indonesia. Silakan coba kata kunci gedung, jalan, atau kota di Indonesia.',
+          text: 'Pencarian dibatasi khusus wilayah Indonesia. Coba gunakan nama gedung, jalan, atau daerah yang lebih spesifik.',
           icon: 'info',
           confirmButtonColor: '#B8860B'
         });
@@ -571,6 +615,7 @@ export default function LandingPage() {
     } catch (e) {
       console.warn('Map search error:', e);
     } finally {
+      setIsSearchingMap(false);
       setIsResolvingMapAddress(false);
     }
   };
@@ -1849,26 +1894,50 @@ export default function LandingPage() {
               <div className="lp-map-modal-body">
                 {/* Search Bar di dalam Peta */}
                 <div className="lp-map-search-bar">
-                  <input
-                    type="text"
-                    placeholder="Ketik nama gedung, masjid, hotel, atau jalan di Indonesia lalu tekan Cari..."
-                    value={mapSearchQuery}
-                    onChange={(e) => setMapSearchQuery(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleSearchOnMap(mapSearchQuery);
-                      }
-                    }}
-                    className="lp-map-search-input"
-                  />
+                  <div className="lp-map-search-input-wrap">
+                    <MagnifyingGlass size={18} weight="bold" className="lp-map-search-icon" />
+                    <input
+                      type="text"
+                      placeholder="Cari gedung, masjid, hotel, kota..."
+                      value={mapSearchQuery}
+                      onChange={(e) => setMapSearchQuery(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleSearchOnMap(mapSearchQuery);
+                        }
+                      }}
+                      className="lp-map-search-input"
+                    />
+                    {mapSearchQuery && (
+                      <button
+                        type="button"
+                        className="lp-map-search-clear"
+                        onClick={() => setMapSearchQuery('')}
+                        aria-label="Hapus kata kunci"
+                      >
+                        <X size={14} weight="bold" />
+                      </button>
+                    )}
+                  </div>
                   <button
                     type="button"
-                    className="lp-btn lp-btn-proceed"
+                    className="lp-map-search-btn"
                     onClick={() => handleSearchOnMap(mapSearchQuery)}
-                    style={{ padding: '0.65rem 1.25rem', fontSize: '0.85rem', flexShrink: 0 }}
+                    disabled={isSearchingMap}
+                    title="Cari lokasi di peta"
                   >
-                    <span>Cari di Peta</span>
+                    {isSearchingMap ? (
+                      <>
+                        <SpinnerGap size={16} weight="bold" className="lp-spin" />
+                        <span>Mencari...</span>
+                      </>
+                    ) : (
+                      <>
+                        <MagnifyingGlass size={16} weight="bold" />
+                        <span>Cari</span>
+                      </>
+                    )}
                   </button>
                 </div>
 
