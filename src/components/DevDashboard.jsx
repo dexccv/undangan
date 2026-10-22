@@ -2926,6 +2926,37 @@ export default function DevDashboard() {
                   </div>
                 </div>
               )}
+
+              {/* Floating Save Action Bar (Sticky in Editor View) */}
+              <div className="dev-floating-save-bar">
+                <div className="dev-save-bar-info">
+                  <span className="status-dot"></span>
+                  <span>{isSaving ? 'Sedang Menyimpan Perubahan...' : `Mode Edit: ${formData.id || 'Undangan Baru'}`}</span>
+                </div>
+                <div className="dev-save-bar-actions">
+                  <button
+                    type="button"
+                    className="dev-btn-secondary dev-btn-sm"
+                    onClick={() => setActiveEditorTab('preview')}
+                  >
+                    <Eye size={16} weight="bold" />
+                    <span>Pratinjau</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="dev-btn-gold dev-btn-sm"
+                    onClick={handleSaveCouple}
+                    disabled={isSaving}
+                  >
+                    {isSaving ? (
+                      <ArrowClockwise size={16} className="lp-spin" />
+                    ) : (
+                      <Check size={16} weight="bold" />
+                    )}
+                    <span>{isSaving ? 'Menyimpan...' : 'Simpan Undangan'}</span>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -3338,6 +3369,54 @@ Rekening: BCA 1234567890 a.n Nadia Salsabila`}
           </div>
         )}
       </main>
+
+      {/* Mobile Fast-Switch Bottom Navigation Bar */}
+      <nav className="dev-mobile-bottom-nav" aria-label="Navigasi Bawah Mobile">
+        <button
+          type="button"
+          className={`dev-bottom-nav-item ${currentView === 'orders' ? 'is-active' : ''}`}
+          onClick={() => {
+            setCurrentView('orders');
+            fetchOrders();
+          }}
+        >
+          <ShoppingBag size={20} weight={currentView === 'orders' ? 'fill' : 'duotone'} />
+          <span>Pesanan</span>
+          {pendingOrdersCount > 0 && (
+            <span className="dev-bottom-nav-badge">{pendingOrdersCount}</span>
+          )}
+        </button>
+
+        <button
+          type="button"
+          className={`dev-bottom-nav-item ${currentView === 'list' ? 'is-active' : ''}`}
+          onClick={() => setCurrentView('list')}
+        >
+          <ImagesSquare size={20} weight={currentView === 'list' ? 'fill' : 'duotone'} />
+          <span>Undangan</span>
+        </button>
+
+        <button
+          type="button"
+          className={`dev-bottom-nav-item ${currentView === 'edit' ? 'is-active' : ''}`}
+          onClick={() => setCurrentView('edit')}
+        >
+          <PencilSimple size={20} weight={currentView === 'edit' ? 'fill' : 'duotone'} />
+          <span>Editor</span>
+        </button>
+
+        <button
+          type="button"
+          className={`dev-bottom-nav-item ${currentView === 'blast' ? 'is-active' : ''}`}
+          onClick={() => {
+            setCurrentView('blast');
+            setSelectedCoupleForLinks(couples[0] || null);
+          }}
+        >
+          <PaperPlaneRight size={20} weight={currentView === 'blast' ? 'fill' : 'duotone'} />
+          <span>Blast WA</span>
+        </button>
+      </nav>
     </div>
   );
 }
