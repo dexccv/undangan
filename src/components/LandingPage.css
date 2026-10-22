@@ -341,6 +341,54 @@ a.lp-btn-primary:hover {
   color: #FFFFFF;
 }
 
+/* Tombol Batal (Merah Elegan / Rose-Crimson) */
+.lp-btn-cancel {
+  background: rgba(254, 242, 242, 0.95) !important;
+  border: 1.5px solid rgba(220, 38, 38, 0.35) !important;
+  color: #DC2626 !important;
+  font-weight: 600;
+  border-radius: 9999px;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.08);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.lp-btn-cancel:hover {
+  background: #DC2626 !important;
+  border-color: #DC2626 !important;
+  color: #FFFFFF !important;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(220, 38, 38, 0.28);
+}
+
+.lp-btn-cancel span,
+.lp-btn-cancel svg {
+  color: inherit !important;
+}
+
+/* Tombol Lanjutkan / Konfirmasi (Hijau Emerald Mewah) */
+.lp-btn-proceed {
+  background: linear-gradient(135deg, #16A34A 0%, #15803D 100%) !important;
+  border: 1.5px solid #16A34A !important;
+  color: #FFFFFF !important;
+  font-weight: 700;
+  border-radius: 9999px;
+  box-shadow: 0 4px 16px rgba(22, 163, 74, 0.32);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.lp-btn-proceed:hover {
+  background: linear-gradient(135deg, #15803D 0%, #166534 100%) !important;
+  border-color: #15803D !important;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(22, 163, 74, 0.45);
+}
+
+.lp-btn-proceed span,
+.lp-btn-proceed svg {
+  color: #FFFFFF !important;
+}
+
+
 .lp-btn-large {
   padding: 1rem 2.25rem;
   font-size: 1.05rem;
@@ -368,6 +416,81 @@ a.lp-btn-primary:hover {
   max-width: 640px;
 }
 
+/* Welcoming Entrance Eyebrow Badge ("Seperti Disambut") */
+.lp-welcome-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.45rem 1.15rem;
+  border-radius: 9999px;
+  background: rgba(184, 134, 11, 0.08);
+  border: 1px solid rgba(184, 134, 11, 0.25);
+  color: var(--lp-gold-hover);
+  font-size: 0.825rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  margin-bottom: 1.35rem;
+  box-shadow: 0 4px 14px rgba(184, 134, 11, 0.07);
+  animation: welcomeFadeDown 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.lp-welcome-icon {
+  color: var(--lp-gold);
+  flex-shrink: 0;
+}
+
+.lp-welcome-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--lp-gold);
+  box-shadow: 0 0 8px rgba(184, 134, 11, 0.6);
+  display: inline-block;
+  animation: pulseDot 2s infinite ease-in-out;
+}
+
+/* Staggered Hero Entrance Animations */
+.lp-anim-title {
+  animation: welcomeFadeUp 0.85s cubic-bezier(0.16, 1, 0.3, 1) 0.12s both;
+}
+
+.lp-anim-sub {
+  animation: welcomeFadeUp 0.85s cubic-bezier(0.16, 1, 0.3, 1) 0.26s both;
+}
+
+.lp-anim-actions {
+  animation: welcomeFadeUp 0.85s cubic-bezier(0.16, 1, 0.3, 1) 0.4s both;
+}
+
+.lp-anim-strip {
+  animation: welcomeFadeUp 0.85s cubic-bezier(0.16, 1, 0.3, 1) 0.54s both;
+}
+
+.lp-anim-mockup {
+  animation: welcomeFadeUp 0.95s cubic-bezier(0.16, 1, 0.3, 1) 0.32s both;
+}
+
+@keyframes welcomeFadeDown {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes welcomeFadeUp {
+  0% {
+    opacity: 0;
+    transform: translateY(26px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 
 .lp-title {
   font-size: clamp(2.5rem, 4.8vw, 4.1rem);
@@ -1569,6 +1692,45 @@ a.lp-btn-primary:hover {
   }
   .lp-bill-value {
     font-size: 1.4rem;
+  }
+}
+
+/* ========================================================
+   SMOOTH SCROLL & SCROLL-TRIGGERED REVEAL
+   ======================================================== */
+html {
+  scroll-behavior: smooth;
+}
+
+.lp-reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1), transform 0.75s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.lp-reveal.is-revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.lp-reveal-stagger-1 { transition-delay: 0.08s; }
+.lp-reveal-stagger-2 { transition-delay: 0.16s; }
+.lp-reveal-stagger-3 { transition-delay: 0.24s; }
+.lp-reveal-stagger-4 { transition-delay: 0.32s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-welcome-badge,
+  .lp-anim-title,
+  .lp-anim-sub,
+  .lp-anim-actions,
+  .lp-anim-strip,
+  .lp-anim-mockup,
+  .lp-reveal {
+    animation: none !important;
+    transition: none !important;
+    opacity: 1 !important;
+    transform: none !important;
   }
 }
 

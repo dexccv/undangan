@@ -204,6 +204,18 @@
   flex: 1;
   padding: 2.25rem 3.5rem;
   overflow-y: auto;
+  scroll-behavior: smooth;
+}
+
+@keyframes devEntranceFade {
+  0% {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Executive Topbar */
@@ -224,6 +236,7 @@
   max-width: 1080px;
   margin-left: auto;
   margin-right: auto;
+  animation: devEntranceFade 0.65s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .dev-topbar-left {

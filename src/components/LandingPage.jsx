@@ -172,6 +172,30 @@ export default function LandingPage() {
     };
   }, [mobileMenuOpen]);
 
+  // Smooth Scroll Reveal via IntersectionObserver
+  React.useEffect(() => {
+    if (typeof window === 'undefined' || !('IntersectionObserver' in window)) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-revealed');
+          }
+        });
+      },
+      {
+        root: null,
+        rootMargin: '0px 0px -40px 0px',
+        threshold: 0.12
+      }
+    );
+
+    const elements = document.querySelectorAll('.lp-reveal');
+    elements.forEach((el) => observer.observe(el));
+
+    return () => observer.disconnect();
+  }, []);
+
   const handleSelectPackage = (packageName, price, e) => {
     if (e) {
       e.preventDefault();
@@ -506,11 +530,18 @@ export default function LandingPage() {
         {/* Hero Section */}
         <section className="lp-hero">
           <div className="lp-hero-content">
-            <h1 className="lp-title">Undangan Digital Premium, Elegan &amp; Bebas Ribet</h1>
-            <p className="lp-subtitle">
+            {/* Welcoming Badge ("Seperti Disambut") */}
+            <div className="lp-welcome-badge">
+              <FlowerLotus size={16} weight="fill" className="lp-welcome-icon" />
+              <span>Selamat Datang di Digitalisasi.id • Platform Undangan Digital Eksklusif</span>
+              <span className="lp-welcome-dot"></span>
+            </div>
+
+            <h1 className="lp-title lp-anim-title">Undangan Digital Premium, Elegan &amp; Bebas Ribet</h1>
+            <p className="lp-subtitle lp-anim-sub">
               Hadirkan kesan pertama yang berkelas untuk seluruh tamu undangan. Lengkap dengan animasi pembuka tirai mewah, galeri foto prewedding sinematik, musik latar syahdu, serta pencatatan konfirmasi kehadiran tamu secara otomatis.
             </p>
-            <div className="lp-hero-actions">
+            <div className="lp-hero-actions lp-anim-actions">
               <a href="#pricing" className="lp-btn lp-btn-primary" onClick={(e) => scrollToSection(e, 'pricing')}>
                 <span>Pilih Paket Undangan</span>
                 <ArrowRight size={18} weight="bold" />
@@ -522,7 +553,7 @@ export default function LandingPage() {
             </div>
 
             {/* Trust Badges Strip */}
-            <div className="lp-trust-strip">
+            <div className="lp-trust-strip lp-anim-strip">
               <div className="lp-trust-item">
                 <Users size={16} weight="fill" className="lp-trust-icon" />
                 <span>1.500+ Pasangan Bahagia</span>
@@ -541,7 +572,7 @@ export default function LandingPage() {
           </div>
 
           {/* Sisi Kanan: Floating Titanium Smartphone Showcase */}
-          <div className="lp-hero-showcase" aria-hidden="true">
+          <div className="lp-hero-showcase lp-anim-mockup" aria-hidden="true">
             {/* Ambient Halo */}
             <div className="lp-mockup-halo"></div>
 
@@ -590,13 +621,13 @@ export default function LandingPage() {
 
         {/* Features Section */}
         <section id="features" className="lp-features">
-          <div className="lp-section-header">
+          <div className="lp-section-header lp-reveal">
             <h2 className="lp-section-title">Mengapa Memilih Digitalisasi.id?</h2>
             <p className="lp-section-sub">Diciptakan dengan desain presisi tinggi agar setiap tamu undangan Anda merasa disambut dengan istimewa:</p>
           </div>
 
           <div className="lp-feature-grid">
-            <div className="lp-feature-card">
+            <div className="lp-feature-card lp-reveal lp-reveal-stagger-1">
               <div className="lp-feature-icon-box">
                 <Sparkle size={30} weight="duotone" className="lp-feature-icon" />
               </div>
@@ -604,7 +635,7 @@ export default function LandingPage() {
               <p>Sensasi membuka tirai megah saat tamu pertama kali mengklik link, memberikan impresi pertama yang eksklusif.</p>
             </div>
 
-            <div className="lp-feature-card">
+            <div className="lp-feature-card lp-reveal lp-reveal-stagger-2">
               <div className="lp-feature-icon-box">
                 <Lightning size={30} weight="duotone" className="lp-feature-icon" />
               </div>
@@ -612,7 +643,7 @@ export default function LandingPage() {
               <p>Telah disesuaikan khusus untuk seluruh ponsel Android &amp; iPhone tanpa kendala geser atau ukuran yang terpotong.</p>
             </div>
 
-            <div className="lp-feature-card">
+            <div className="lp-feature-card lp-reveal lp-reveal-stagger-3">
               <div className="lp-feature-icon-box">
                 <MusicNotes size={30} weight="duotone" className="lp-feature-icon" />
               </div>
@@ -620,7 +651,7 @@ export default function LandingPage() {
               <p>Latar lagu romantis pilihan dengan tombol putar fleksibel serta susunan album foto prewedding yang memukau.</p>
             </div>
 
-            <div className="lp-feature-card">
+            <div className="lp-feature-card lp-reveal lp-reveal-stagger-4">
               <div className="lp-feature-icon-box">
                 <BookOpen size={30} weight="duotone" className="lp-feature-icon" />
               </div>
@@ -632,7 +663,7 @@ export default function LandingPage() {
 
         {/* Pricing Section */}
         <section id="pricing" className="lp-pricing">
-          <div className="lp-section-header">
+          <div className="lp-section-header lp-reveal">
             <h2 className="lp-section-title">Investasi untuk Hari Bahagia Anda</h2>
             <p className="lp-section-sub">Pilih paket terbaik yang sesuai dengan konsep dan skala acara pernikahan Anda:</p>
 
@@ -674,7 +705,7 @@ export default function LandingPage() {
             onScroll={handlePricingScroll}
           >
             {/* Paket Silver */}
-            <div className="lp-price-card">
+            <div className="lp-price-card lp-reveal lp-reveal-stagger-1">
               <div className="lp-price-header">
                 <h3>Paket Silver</h3>
                 <div className="lp-price">Rp 49.000</div>
@@ -698,7 +729,7 @@ export default function LandingPage() {
             </div>
 
             {/* Paket Gold (Paling Populer) */}
-            <div className="lp-price-card lp-popular">
+            <div className="lp-price-card lp-popular lp-reveal lp-reveal-stagger-2">
               <div className="lp-popular-badge">Paling Populer</div>
               <div className="lp-price-header">
                 <h3>Paket Gold Imperial</h3>
@@ -725,7 +756,7 @@ export default function LandingPage() {
             </div>
 
             {/* Paket Royal Platinum */}
-            <div className="lp-price-card">
+            <div className="lp-price-card lp-reveal lp-reveal-stagger-3">
               <div className="lp-price-header">
                 <h3>Paket Royal Platinum</h3>
                 <div className="lp-price">Rp 249.000</div>
@@ -765,7 +796,7 @@ export default function LandingPage() {
 
         {/* Footer CTA */}
         <footer id="contact" className="lp-footer">
-          <div className="lp-footer-content">
+          <div className="lp-footer-content lp-reveal">
             <h2>Wujudkan Undangan Pernikahan Impian Anda</h2>
             <p>Konsultasikan tanggal dan konsep undangan Anda bersama tim kami secara gratis melalui WhatsApp.</p>
             <div className="lp-footer-actions">
@@ -1076,7 +1107,7 @@ export default function LandingPage() {
                   <div className="lp-order-modal-actions">
                     <button 
                       type="button" 
-                      className="lp-btn lp-btn-secondary"
+                      className="lp-btn lp-btn-cancel"
                       onClick={() => setIsOrderModalOpen(false)}
                       disabled={isSubmittingOrder}
                     >
@@ -1084,7 +1115,7 @@ export default function LandingPage() {
                     </button>
                     <button 
                       type="submit" 
-                      className="lp-btn lp-btn-primary lp-order-submit-btn"
+                      className="lp-btn lp-btn-proceed lp-order-submit-btn"
                       disabled={isSubmittingOrder}
                     >
                       <span>{isSubmittingOrder ? 'Menyimpan...' : 'Lanjut ke Pembayaran QRIS'}</span>
@@ -1171,7 +1202,7 @@ export default function LandingPage() {
                   <div className="lp-order-modal-actions">
                     <button 
                       type="button" 
-                      className="lp-btn lp-btn-secondary"
+                      className="lp-btn lp-btn-cancel"
                       onClick={() => setOrderStep('form')}
                       disabled={isUploadingReceipt}
                     >
@@ -1180,7 +1211,7 @@ export default function LandingPage() {
                     </button>
                     <button 
                       type="button" 
-                      className="lp-btn lp-btn-primary lp-order-submit-btn"
+                      className="lp-btn lp-btn-proceed lp-order-submit-btn"
                       onClick={handleFinalConfirmPayment}
                       disabled={isUploadingReceipt}
                     >
