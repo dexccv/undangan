@@ -76,7 +76,7 @@ export default function ThreeScene({ children }) {
           width: '100vw',
           height: '100vh',
           pointerEvents: 'none',
-          zIndex: 2,
+          zIndex: 0,
           opacity: 0.55
         }}
         aria-hidden="true"
@@ -86,6 +86,7 @@ export default function ThreeScene({ children }) {
             camera={{ position: [0, 0, 5], fov: 60 }}
             dpr={[1, 1.5]}
             gl={{ alpha: true, antialias: true }}
+            style={{ pointerEvents: 'none' }}
           >
             <ambientLight intensity={0.8} />
             <directionalLight position={[5, 8, 4]} intensity={1} color="#FAF8F3" />
@@ -95,7 +96,7 @@ export default function ThreeScene({ children }) {
       </div>
 
       {/* Main Page HTML Layer - Directly in DOM, 100% accessible and responsive */}
-      <div className="three-scene-content" style={{ position: 'relative', zIndex: 1, width: '100%' }}>
+      <div className="three-scene-content" style={{ position: 'relative', zIndex: 10, width: '100%' }}>
         {children}
       </div>
     </div>

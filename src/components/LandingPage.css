@@ -32,13 +32,13 @@
   line-height: 1.6;
 }
 
-/* Subtle Fixed Tactile Film Grain (Zero scroll lag) */
+/* Subtle Fixed Tactile Film Grain (Zero scroll lag, behind interactive elements) */
 .lp-container::before {
   content: '';
   position: fixed;
   inset: 0;
   pointer-events: none;
-  z-index: 99;
+  z-index: 0;
   opacity: 0.022;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
 }
@@ -144,10 +144,15 @@
   border-radius: 9999px;
   font-weight: 600;
   font-size: 0.95rem;
-  cursor: pointer;
+  cursor: pointer !important;
   text-decoration: none;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   border: 1px solid transparent;
+  position: relative;
+  z-index: 10;
+  pointer-events: auto !important;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
 }
 
 .lp-btn-primary {
@@ -639,7 +644,16 @@
   display: flex;
   flex-direction: column;
   position: relative;
+  z-index: 10;
+  pointer-events: auto !important;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.lp-price-card .lp-btn {
+  position: relative;
+  z-index: 25;
+  pointer-events: auto !important;
+  cursor: pointer !important;
 }
 
 .lp-price-card:hover {

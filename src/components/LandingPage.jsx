@@ -69,6 +69,16 @@ export default function LandingPage() {
     }
   }, []);
 
+  const handleSelectPackage = (packageName, e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    const text = encodeURIComponent(`Halo, saya tertarik memesan ${packageName} di Digitalisasi.id`);
+    const waUrl = `https://wa.me/6281234567890?text=${text}`;
+    window.open(waUrl, '_blank', 'noopener,noreferrer');
+  };
+
   return (
     <ThreeScene>
       <div className="lp-container">
@@ -324,6 +334,7 @@ export default function LandingPage() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="lp-btn lp-btn-outline lp-full-width"
+                onClick={(e) => handleSelectPackage('Paket Silver', e)}
               >
                 Pilih Paket Silver
               </a>
@@ -352,6 +363,7 @@ export default function LandingPage() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="lp-btn lp-btn-primary lp-full-width"
+                onClick={(e) => handleSelectPackage('Paket Gold Imperial', e)}
               >
                 Pilih Paket Gold Imperial
               </a>
@@ -377,6 +389,7 @@ export default function LandingPage() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="lp-btn lp-btn-outline lp-full-width"
+                onClick={(e) => handleSelectPackage('Paket Royal Platinum', e)}
               >
                 Pilih Paket Royal Platinum
               </a>
