@@ -25,13 +25,28 @@ export default function LandingPage() {
   const [activePackageIndex, setActivePackageIndex] = useState(1);
   const pricingGridRef = React.useRef(null);
 
-  const scrollToPackage = (idx) => {
+  const scrollToPackage = (idx, smooth = true) => {
     setActivePackageIndex(idx);
-    if (pricingGridRef.current) {
-      const cards = pricingGridRef.current.children;
+    const container = pricingGridRef.current;
+    if (container) {
+      const cards = container.children;
       if (cards && cards[idx]) {
-        cards[idx].scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        const card = cards[idx];
+        const targetScrollLeft = card.offsetLeft - (container.offsetWidth - card.offsetWidth) / 2;
+        container.scrollTo({
+          left: Math.max(0, targetScrollLeft),
+          behavior: smooth ? 'smooth' : 'auto'
+        });
       }
+    }
+  };
+
+  const scrollToSection = (e, sectionId) => {
+    if (e) e.preventDefault();
+    setMobileMenuOpen(false);
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
@@ -61,11 +76,24 @@ export default function LandingPage() {
   };
 
   React.useEffect(() => {
-    if (window.innerWidth <= 768 && pricingGridRef.current) {
-      const timer = setTimeout(() => {
-        scrollToPackage(1);
-      }, 300);
-      return () => clearTimeout(timer);
+    // Bersihkan hash dari URL jika ada (seperti #pricing) dan pastikan scroll mulai dari atas saat reload
+    if (window.location.hash) {
+      if (window.history.replaceState) {
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      }
+      window.scrollTo(0, 0);
+    }
+
+    // Posisikan kartu rekomendasi (Gold Imperial, index 1) di tengah container horizontal
+    // HANYA pada container scroll internal, tidak memicu scroll vertikal halaman (window)
+    if (pricingGridRef.current) {
+      const container = pricingGridRef.current;
+      const cards = container.children;
+      if (cards && cards[1]) {
+        const card = cards[1];
+        const targetScrollLeft = card.offsetLeft - (container.offsetWidth - card.offsetWidth) / 2;
+        container.scrollLeft = Math.max(0, targetScrollLeft);
+      }
     }
   }, []);
 
@@ -92,8 +120,8 @@ export default function LandingPage() {
 
             {/* Desktop Links */}
             <nav className="lp-nav-links" aria-label="Menu Utama">
-              <a href="#features">Fitur Lengkap</a>
-              <a href="#pricing">Pilihan Paket</a>
+              <a href="#features" onClick={(e) => scrollToSection(e, 'features')}>Fitur Lengkap</a>
+              <a href="#pricing" onClick={(e) => scrollToSection(e, 'pricing')}>Pilihan Paket</a>
               <a href="/?id=demo" className="lp-link-demo">
                 <Eye size={16} weight="bold" />
                 <span>Lihat Contoh Undangan</span>
@@ -122,8 +150,8 @@ export default function LandingPage() {
           {/* Mobile Drawer */}
           {mobileMenuOpen && (
             <div className="lp-mobile-drawer">
-              <a href="#features" onClick={() => setMobileMenuOpen(false)}>Fitur Lengkap</a>
-              <a href="#pricing" onClick={() => setMobileMenuOpen(false)}>Pilihan Paket</a>
+              <a href="#features" onClick={(e) => scrollToSection(e, 'features')}>Fitur Lengkap</a>
+              <a href="#pricing" onClick={(e) => scrollToSection(e, 'pricing')}>Pilihan Paket</a>
               <a href="/?id=demo" onClick={() => setMobileMenuOpen(false)}>Lihat Contoh Undangan</a>
               <a 
                 href="https://wa.me/6281234567890" 
@@ -150,7 +178,7 @@ export default function LandingPage() {
               Hadirkan kesan pertama yang berkelas untuk seluruh tamu undangan. Lengkap dengan animasi pembuka tirai mewah, galeri foto prewedding sinematik, musik latar syahdu, serta pencatatan konfirmasi kehadiran tamu secara otomatis.
             </p>
             <div className="lp-hero-actions">
-              <a href="#pricing" className="lp-btn lp-btn-primary">
+              <a href="#pricing" className="lp-btn lp-btn-primary" onClick={(e) => scrollToSection(e, 'pricing')}>
                 <span>Pilih Paket Undangan</span>
                 <ArrowRight size={18} weight="bold" />
               </a>
