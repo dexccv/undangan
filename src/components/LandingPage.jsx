@@ -23,7 +23,11 @@ import {
   Phone,
   User,
   NotePencil,
-  PaperPlaneTilt
+  PaperPlaneTilt,
+  Globe,
+  InstagramLogo,
+  MapPin,
+  Quotes
 } from '@phosphor-icons/react';
 import ThreeScene from './ThreeScene';
 import './LandingPage.css';
@@ -33,13 +37,32 @@ export default function LandingPage() {
   const [activePackageIndex, setActivePackageIndex] = useState(1);
   const pricingGridRef = React.useRef(null);
 
-  // State Modal Pemesanan Paket
+  // State Modal Pemesanan Paket (Formulir Lengkap Mempelai)
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
   const [orderPackage, setOrderPackage] = useState('Paket Gold Imperial');
-  const [orderPrice, setOrderPrice] = useState('Rp 99.000');
-  const [orderCoupleName, setOrderCoupleName] = useState('');
+  const [orderPrice, setOrderPrice] = useState('Rp 299.000');
+  const [orderSlug, setOrderSlug] = useState('');
+  const [isSlugUserEdited, setIsSlugUserEdited] = useState(false);
   const [orderPhone, setOrderPhone] = useState('');
+
+  // Mempelai Wanita
+  const [orderWanitaPanggilan, setOrderWanitaPanggilan] = useState('');
+  const [orderWanitaLengkap, setOrderWanitaLengkap] = useState('');
+  const [orderWanitaOrtu, setOrderWanitaOrtu] = useState('');
+  const [orderWanitaIg, setOrderWanitaIg] = useState('');
+
+  // Mempelai Pria
+  const [orderPriaPanggilan, setOrderPriaPanggilan] = useState('');
+  const [orderPriaLengkap, setOrderPriaLengkap] = useState('');
+  const [orderPriaOrtu, setOrderPriaOrtu] = useState('');
+  const [orderPriaIg, setOrderPriaIg] = useState('');
+
+  // Acara, Doa & Catatan
   const [orderEventDate, setOrderEventDate] = useState('');
+  const [orderEventLocation, setOrderEventLocation] = useState('');
+  const [orderKutipanDoa, setOrderKutipanDoa] = useState(
+    'Dan di antara tanda-tanda (kebesaran)-Nya ialah Dia menciptakan pasangan-pasangan untukmu dari jenismu sendiri, agar kamu cenderung dan merasa tenteram kepadanya, dan Dia menjadikan di antaramu rasa kasih dan sayang. (QS. Ar-Rum: 21)'
+  );
   const [orderNotes, setOrderNotes] = useState('');
   const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
 
@@ -140,16 +163,58 @@ export default function LandingPage() {
       e.stopPropagation();
     }
     setOrderPackage(packageName);
-    setOrderPrice(price || 'Rp 99.000');
+    setOrderPrice(price || 'Rp 299.000');
     setIsOrderModalOpen(true);
+  };
+
+  const handleWanitaPanggilanChange = (val) => {
+    setOrderWanitaPanggilan(val);
+    if (!isSlugUserEdited) {
+      const w = val.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+      const p = (orderPriaPanggilan || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (w && p) setOrderSlug(`${w}-${p}`);
+      else if (w) setOrderSlug(w);
+      else if (p) setOrderSlug(p);
+    }
+  };
+
+  const handlePriaPanggilanChange = (val) => {
+    setOrderPriaPanggilan(val);
+    if (!isSlugUserEdited) {
+      const w = (orderWanitaPanggilan || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+      const p = val.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (w && p) setOrderSlug(`${w}-${p}`);
+      else if (p) setOrderSlug(p);
+      else if (w) setOrderSlug(w);
+    }
+  };
+
+  const handleSlugChange = (val) => {
+    setIsSlugUserEdited(true);
+    setOrderSlug(val.toLowerCase().replace(/[^a-z0-9-]/g, ''));
   };
 
   const handleOrderSubmit = async (e) => {
     e.preventDefault();
-    if (!orderCoupleName.trim() || !orderPhone.trim()) {
+    const finalWanita = orderWanitaPanggilan.trim();
+    const finalPria = orderPriaPanggilan.trim();
+    const finalPhone = orderPhone.trim();
+    const finalSlug = (orderSlug.trim() || `${finalWanita}-${finalPria}`).toLowerCase().replace(/[^a-z0-9-]+/g, '-');
+
+    if (!finalWanita || !finalPria) {
       Swal.fire({
-        title: 'Lengkapi Data',
-        text: 'Mohon masukkan nama pasangan dan nomor WhatsApp aktif.',
+        title: 'Lengkapi Nama Mempelai',
+        text: 'Mohon masukkan nama panggilan mempelai wanita dan mempelai pria.',
+        icon: 'warning',
+        confirmButtonColor: '#B8860B'
+      });
+      return;
+    }
+
+    if (!finalPhone) {
+      Swal.fire({
+        title: 'Nomor WhatsApp Diperlukan',
+        text: 'Mohon masukkan nomor WhatsApp aktif Anda untuk konfirmasi pesanan.',
         icon: 'warning',
         confirmButtonColor: '#B8860B'
       });
@@ -161,10 +226,28 @@ export default function LandingPage() {
       id: 'ord-' + Date.now(),
       package_name: orderPackage,
       package_price: orderPrice,
-      couple_name: orderCoupleName.trim(),
-      customer_phone: orderPhone.trim(),
+      slug: finalSlug,
+      couple_name: `${finalWanita} & ${finalPria}`,
+      customer_phone: finalPhone,
+
+      // Mempelai Wanita
+      wanita_panggilan: finalWanita,
+      wanita_lengkap: orderWanitaLengkap.trim(),
+      wanita_ortu: orderWanitaOrtu.trim(),
+      wanita_ig: orderWanitaIg.trim(),
+
+      // Mempelai Pria
+      pria_panggilan: finalPria,
+      pria_lengkap: orderPriaLengkap.trim(),
+      pria_ortu: orderPriaOrtu.trim(),
+      pria_ig: orderPriaIg.trim(),
+
+      // Acara, Doa & Catatan
       event_date: orderEventDate || '',
-      notes: orderNotes.trim() || '',
+      event_location: orderEventLocation.trim(),
+      kutipan_doa: orderKutipanDoa.trim(),
+      notes: orderNotes.trim(),
+
       status: 'pending',
       created_at: { seconds: Math.floor(Date.now() / 1000) }
     };
@@ -186,8 +269,30 @@ export default function LandingPage() {
       console.warn('Firestore orders save warning (rules/offline):', err);
     }
 
-    const waMsg = `Halo Admin Digitalisasi.id, saya ingin memesan:\n\n*Paket:* ${orderPackage} (${orderPrice})\n*Nama Pasangan:* ${orderCoupleName.trim()}\n*Nomor WhatsApp:* ${orderPhone.trim()}\n*Perkiraan Tanggal:* ${orderEventDate || '-'}\n*Catatan:* ${orderNotes.trim() || '-'}\n\nMohon informasi langkah selanjutnya. Terima kasih!`;
-    const waUrl = `https://wa.me/6281225589199?text=${encodeURIComponent(waMsg)}`;
+    // Format WhatsApp Message
+    const waLines = [
+      `Halo Admin Digitalisasi.id, saya ingin memesan undangan digital:`,
+      ``,
+      `*Paket:* ${orderPackage} (${orderPrice})`,
+      `*Nama Tautan Undangan:* domainanda.com/?id=${finalSlug}`,
+      `*Nomor WhatsApp:* ${finalPhone}`,
+      ``,
+      `*Mempelai Wanita:* ${finalWanita}${orderWanitaLengkap.trim() ? ` (${orderWanitaLengkap.trim()})` : ''}`,
+      orderWanitaOrtu.trim() ? `*Orang Tua Wanita:* ${orderWanitaOrtu.trim()}` : null,
+      orderWanitaIg.trim() ? `*Instagram Wanita:* ${orderWanitaIg.trim()}` : null,
+      ``,
+      `*Mempelai Pria:* ${finalPria}${orderPriaLengkap.trim() ? ` (${orderPriaLengkap.trim()})` : ''}`,
+      orderPriaOrtu.trim() ? `*Orang Tua Pria:* ${orderPriaOrtu.trim()}` : null,
+      orderPriaIg.trim() ? `*Instagram Pria:* ${orderPriaIg.trim()}` : null,
+      ``,
+      orderEventDate ? `*Tanggal Acara:* ${orderEventDate}` : null,
+      orderEventLocation.trim() ? `*Lokasi Acara:* ${orderEventLocation.trim()}` : null,
+      orderNotes.trim() ? `*Catatan Tambahan:* ${orderNotes.trim()}` : null,
+      ``,
+      `Mohon dibantu pembuatan draf undangannya. Terima kasih!`
+    ].filter((line) => line !== null).join('\n');
+
+    const waUrl = `https://wa.me/6281225589199?text=${encodeURIComponent(waLines)}`;
 
     await Swal.fire({
       title: 'Pesanan Berhasil Dicatat!',
@@ -199,10 +304,6 @@ export default function LandingPage() {
 
     window.open(waUrl, '_blank', 'noopener,noreferrer');
     setIsOrderModalOpen(false);
-    setOrderCoupleName('');
-    setOrderPhone('');
-    setOrderEventDate('');
-    setOrderNotes('');
     setIsSubmittingOrder(false);
   };
 
@@ -639,65 +740,233 @@ export default function LandingPage() {
               </div>
 
               <form onSubmit={handleOrderSubmit} className="lp-order-form">
-                <div className="lp-order-form-group">
-                  <label htmlFor="order-couple-name">
-                    <User size={16} weight="bold" />
-                    <span>Nama Pasangan (Panggilan) *</span>
+                {/* 1. Tautan Undangan */}
+                <div className="lp-order-form-group full-width">
+                  <label htmlFor="order-slug">
+                    <span>Nama Tautan Undangan (Wajib diisi, huruf kecil tanpa spasi) *</span>
                   </label>
                   <input
-                    id="order-couple-name"
+                    id="order-slug"
                     type="text"
                     required
-                    placeholder="Contoh: Nadia & Agus"
-                    value={orderCoupleName}
-                    onChange={(e) => setOrderCoupleName(e.target.value)}
+                    placeholder="Contoh: dimas-anisa"
+                    value={orderSlug}
+                    onChange={(e) => handleSlugChange(e.target.value)}
                     className="lp-order-input"
                   />
+                  <small className="lp-order-helper-text">
+                    Tautan undangan Anda nantinya: domainanda.com/?id=<strong>{orderSlug || 'dimas-anisa'}</strong>
+                  </small>
                 </div>
 
-                <div className="lp-order-form-group">
-                  <label htmlFor="order-phone">
-                    <Phone size={16} weight="bold" />
-                    <span>Nomor WhatsApp Pemesan *</span>
-                  </label>
-                  <input
-                    id="order-phone"
-                    type="tel"
-                    required
-                    placeholder="Contoh: 081234567890"
-                    value={orderPhone}
-                    onChange={(e) => setOrderPhone(e.target.value)}
-                    className="lp-order-input"
-                  />
+                {/* 2. Data Mempelai Wanita */}
+                <div className="lp-order-grid-2">
+                  <div className="lp-order-form-group">
+                    <label htmlFor="order-wanita-panggilan">
+                      <span>Nama Panggilan Mempelai Wanita *</span>
+                    </label>
+                    <input
+                      id="order-wanita-panggilan"
+                      type="text"
+                      required
+                      placeholder="Contoh: Dimas"
+                      value={orderWanitaPanggilan}
+                      onChange={(e) => handleWanitaPanggilanChange(e.target.value)}
+                      className="lp-order-input"
+                    />
+                  </div>
+
+                  <div className="lp-order-form-group">
+                    <label htmlFor="order-wanita-lengkap">
+                      <span>Nama Lengkap &amp; Gelar Mempelai Wanita</span>
+                      <span className="lp-label-optional">(Opsional)</span>
+                    </label>
+                    <input
+                      id="order-wanita-lengkap"
+                      type="text"
+                      placeholder="Contoh: Dimas Salsabila, S.Kom"
+                      value={orderWanitaLengkap}
+                      onChange={(e) => setOrderWanitaLengkap(e.target.value)}
+                      className="lp-order-input"
+                    />
+                  </div>
                 </div>
 
-                <div className="lp-order-form-group">
-                  <label htmlFor="order-event-date">
-                    <CalendarBlank size={16} weight="bold" />
-                    <span>Perkiraan Tanggal Acara (Opsional)</span>
-                  </label>
-                  <input
-                    id="order-event-date"
-                    type="date"
-                    value={orderEventDate}
-                    onChange={(e) => setOrderEventDate(e.target.value)}
-                    className="lp-order-input"
-                  />
+                <div className="lp-order-grid-2">
+                  <div className="lp-order-form-group">
+                    <label htmlFor="order-wanita-ortu">
+                      <span>Nama Orang Tua Mempelai Wanita</span>
+                      <span className="lp-label-optional">(Opsional)</span>
+                    </label>
+                    <input
+                      id="order-wanita-ortu"
+                      type="text"
+                      placeholder="Contoh: Bpk. Ahmad Fauzi & Ibu Siti Aminah"
+                      value={orderWanitaOrtu}
+                      onChange={(e) => setOrderWanitaOrtu(e.target.value)}
+                      className="lp-order-input"
+                    />
+                  </div>
+
+                  <div className="lp-order-form-group">
+                    <label htmlFor="order-wanita-ig">
+                      <span>Akun Instagram Mempelai Wanita</span>
+                      <span className="lp-label-optional">(Opsional)</span>
+                    </label>
+                    <input
+                      id="order-wanita-ig"
+                      type="text"
+                      placeholder="Contoh: @nadiasalsabila"
+                      value={orderWanitaIg}
+                      onChange={(e) => setOrderWanitaIg(e.target.value)}
+                      className="lp-order-input"
+                    />
+                  </div>
                 </div>
 
-                <div className="lp-order-form-group">
-                  <label htmlFor="order-notes">
-                    <NotePencil size={16} weight="bold" />
-                    <span>Catatan Tambahan / Konsep Acara (Opsional)</span>
+                {/* 3. Data Mempelai Pria */}
+                <div className="lp-order-grid-2">
+                  <div className="lp-order-form-group">
+                    <label htmlFor="order-pria-panggilan">
+                      <span>Nama Panggilan Mempelai Pria *</span>
+                    </label>
+                    <input
+                      id="order-pria-panggilan"
+                      type="text"
+                      required
+                      placeholder="Contoh: Anisa"
+                      value={orderPriaPanggilan}
+                      onChange={(e) => handlePriaPanggilanChange(e.target.value)}
+                      className="lp-order-input"
+                    />
+                  </div>
+
+                  <div className="lp-order-form-group">
+                    <label htmlFor="order-pria-lengkap">
+                      <span>Nama Lengkap &amp; Gelar Mempelai Pria</span>
+                      <span className="lp-label-optional">(Opsional)</span>
+                    </label>
+                    <input
+                      id="order-pria-lengkap"
+                      type="text"
+                      placeholder="Contoh: Anisa Pratama, S.T"
+                      value={orderPriaLengkap}
+                      onChange={(e) => setOrderPriaLengkap(e.target.value)}
+                      className="lp-order-input"
+                    />
+                  </div>
+                </div>
+
+                <div className="lp-order-grid-2">
+                  <div className="lp-order-form-group">
+                    <label htmlFor="order-pria-ortu">
+                      <span>Nama Orang Tua Mempelai Pria</span>
+                      <span className="lp-label-optional">(Opsional)</span>
+                    </label>
+                    <input
+                      id="order-pria-ortu"
+                      type="text"
+                      placeholder="Contoh: Bpk. Hendra Wijaya & Ibu Ratna Dewi"
+                      value={orderPriaOrtu}
+                      onChange={(e) => setOrderPriaOrtu(e.target.value)}
+                      className="lp-order-input"
+                    />
+                  </div>
+
+                  <div className="lp-order-form-group">
+                    <label htmlFor="order-pria-ig">
+                      <span>Akun Instagram Mempelai Pria</span>
+                      <span className="lp-label-optional">(Opsional)</span>
+                    </label>
+                    <input
+                      id="order-pria-ig"
+                      type="text"
+                      placeholder="Contoh: @aguspratama"
+                      value={orderPriaIg}
+                      onChange={(e) => setOrderPriaIg(e.target.value)}
+                      className="lp-order-input"
+                    />
+                  </div>
+                </div>
+
+                {/* 4. Kutipan Doa / Ayat Suci */}
+                <div className="lp-order-form-group full-width">
+                  <label htmlFor="order-kutipan-doa">
+                    <span>Kutipan Doa / Ayat Suci</span>
+                    <span className="lp-label-optional">(Opsional)</span>
                   </label>
                   <textarea
-                    id="order-notes"
+                    id="order-kutipan-doa"
                     rows={3}
-                    placeholder="Contoh: Konsep modern adat Jawa, lagu latar khusus..."
-                    value={orderNotes}
-                    onChange={(e) => setOrderNotes(e.target.value)}
+                    placeholder="Contoh: Dan di antara tanda-tanda (kebesaran)-Nya ialah Dia menciptakan pasangan-pasangan untukmu dari jenismu sendiri..."
+                    value={orderKutipanDoa}
+                    onChange={(e) => setOrderKutipanDoa(e.target.value)}
                     className="lp-order-textarea"
                   ></textarea>
+                </div>
+
+                {/* 5. Kontak Pemesan & Jadwal Acara */}
+                <div className="lp-order-grid-2">
+                  <div className="lp-order-form-group">
+                    <label htmlFor="order-phone">
+                      <span>Nomor WhatsApp Pemesan *</span>
+                    </label>
+                    <input
+                      id="order-phone"
+                      type="tel"
+                      required
+                      placeholder="Contoh: 081234567890"
+                      value={orderPhone}
+                      onChange={(e) => setOrderPhone(e.target.value)}
+                      className="lp-order-input"
+                    />
+                  </div>
+
+                  <div className="lp-order-form-group">
+                    <label htmlFor="order-event-date">
+                      <span>Perkiraan Tanggal Acara</span>
+                      <span className="lp-label-optional">(Opsional)</span>
+                    </label>
+                    <input
+                      id="order-event-date"
+                      type="date"
+                      value={orderEventDate}
+                      onChange={(e) => setOrderEventDate(e.target.value)}
+                      className="lp-order-input"
+                    />
+                  </div>
+                </div>
+
+                <div className="lp-order-grid-2">
+                  <div className="lp-order-form-group">
+                    <label htmlFor="order-location">
+                      <span>Tempat / Lokasi Acara</span>
+                      <span className="lp-label-optional">(Opsional)</span>
+                    </label>
+                    <input
+                      id="order-location"
+                      type="text"
+                      placeholder="Contoh: Masjid Agung Al-Barkah / Grand Ballroom"
+                      value={orderEventLocation}
+                      onChange={(e) => setOrderEventLocation(e.target.value)}
+                      className="lp-order-input"
+                    />
+                  </div>
+
+                  <div className="lp-order-form-group">
+                    <label htmlFor="order-notes">
+                      <span>Catatan Tambahan / Konsep Acara</span>
+                      <span className="lp-label-optional">(Opsional)</span>
+                    </label>
+                    <input
+                      id="order-notes"
+                      type="text"
+                      placeholder="Contoh: Konsep sage green modern, lagu khusus..."
+                      value={orderNotes}
+                      onChange={(e) => setOrderNotes(e.target.value)}
+                      className="lp-order-input"
+                    />
+                  </div>
                 </div>
 
                 <div className="lp-order-modal-actions">

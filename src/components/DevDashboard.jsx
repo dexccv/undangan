@@ -277,9 +277,20 @@ export default function DevDashboard() {
         id: 'ord-sample-01',
         package_name: 'Paket Gold Imperial',
         package_price: 'Rp 299.000',
+        slug: 'dimas-anisa',
+        wanita_panggilan: 'Dimas',
+        wanita_lengkap: 'Dimas Salsabila',
+        wanita_ortu: 'Bpk. Ahmad Fauzi & Ibu Siti Aminah',
+        wanita_ig: '@nadiasalsabila',
+        pria_panggilan: 'Anisa',
+        pria_lengkap: 'Anisa Pratama',
+        pria_ortu: 'Bpk. Hendra Wijaya & Ibu Ratna Dewi',
+        pria_ig: '@aguspratama',
         couple_name: 'Dimas & Anisa',
         customer_phone: '081234567890',
         event_date: '2026-11-20',
+        event_location: 'Masjid Agung Al-Barkah',
+        kutipan_doa: 'Dan di antara tanda-tanda (kebesaran)-Nya ialah Dia menciptakan pasangan-pasangan untukmu dari jenismu sendiri...',
         notes: 'Tema modern sage green, minta diprioritaskan bagian galeri foto.',
         status: 'pending',
         created_at: { seconds: Math.floor(Date.now() / 1000) }
@@ -364,19 +375,22 @@ export default function DevDashboard() {
 
   // Konversi 1-Klik Pesanan ke Draf Undangan
   const handleConvertOrderToInvitation = (order) => {
-    let bride = 'Nadia';
-    let groom = 'Agus';
-    if (order.couple_name) {
+    let bride = order.wanita_panggilan || '';
+    let groom = order.pria_panggilan || '';
+    if (!bride && !groom && order.couple_name) {
       const parts = order.couple_name.split(/&|dan|\+/i);
       if (parts.length >= 2) {
         bride = parts[0].trim();
         groom = parts[1].trim();
       } else {
         bride = order.couple_name.trim();
+        groom = 'Pasangan';
       }
     }
+    bride = bride || 'Dimas';
+    groom = groom || 'Anisa';
 
-    const baseSlug = `${bride}-${groom}`
+    const baseSlug = (order.slug || `${bride}-${groom}`)
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '');
@@ -402,9 +416,19 @@ export default function DevDashboard() {
       ...initial,
       id: slug,
       wanita_panggilan: bride,
-      wanita_lengkap: `${bride} Salsabila`,
+      wanita_lengkap: order.wanita_lengkap || `${bride} Salsabila`,
+      wanita_ortu: order.wanita_ortu || initial.wanita_ortu,
+      wanita_ig: order.wanita_ig || initial.wanita_ig,
+
       pria_panggilan: groom,
-      pria_lengkap: `${groom} Pratama`,
+      pria_lengkap: order.pria_lengkap || `${groom} Pratama`,
+      pria_ortu: order.pria_ortu || initial.pria_ortu,
+      pria_ig: order.pria_ig || initial.pria_ig,
+
+      quote_teks: order.kutipan_doa || initial.quote_teks,
+      lokasi_akad: order.event_location || initial.lokasi_akad,
+      lokasi_resepsi: order.event_location || initial.lokasi_resepsi,
+
       tanggal_cover: formattedDate || initial.tanggal_cover,
       tanggal_akad: order.event_date ? `${order.event_date}T08:00:00` : initial.tanggal_akad,
       tanggal_lengkap_akad: formattedDate || initial.tanggal_lengkap_akad,
