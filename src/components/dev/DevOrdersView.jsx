@@ -23,7 +23,9 @@ export default function DevOrdersView({
   handleUpdateOrderStatus,
   handleViewReceipt,
   handleConvertOrderToInvitation,
-  handleDeleteOrder
+  handleDeleteOrder,
+  isRulesRestricted,
+  showRulesGuide
 }) {
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -91,6 +93,26 @@ export default function DevOrdersView({
           </button>
         </div>
       </div>
+
+      {/* Peringatan Firebase Security Rules jika terblokir */}
+      {isRulesRestricted && (
+        <div className="dev-rules-alert-banner">
+          <div className="dev-rules-alert-left">
+            <span className="dev-rules-alert-badge">Izin Firebase Dibutuhkan</span>
+            <h4>Koleksi Pesanan Terblokir oleh Firestore Security Rules</h4>
+            <p>
+              Terdeteksi error <code>Missing or insufficient permissions</code>. Pesanan dari landing page belum dapat masuk ke dashboard sampai aturan keamanan Firestore diizinkan.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="dev-btn-rules-action"
+            onClick={showRulesGuide}
+          >
+            Buka Panduan &amp; Salin Rules
+          </button>
+        </div>
+      )}
 
       {/* Metrics Bento Cards (Responsive Compact Grid) */}
       <div className="dev-orders-metrics-grid">

@@ -4684,3 +4684,100 @@
   flex-shrink: 0;
   margin-top: 0.15rem;
 }
+
+/* ==========================================================================
+   19. FIREBASE RULES ALERT BANNER
+   ========================================================================== */
+
+.dev-rules-alert-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  padding: 1.15rem 1.4rem;
+  background: #FFFBEB;
+  border: 1.5px solid #FCD34D;
+  border-radius: var(--dev-radius-md);
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.08);
+}
+
+.dev-rules-alert-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.dev-rules-alert-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #B45309;
+  background: #FEF3C7;
+  padding: 0.15rem 0.55rem;
+  border-radius: var(--dev-radius-sm);
+  width: fit-content;
+}
+
+.dev-rules-alert-left h4 {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: #92400E;
+  margin: 0;
+}
+
+.dev-rules-alert-left p {
+  font-size: 0.83rem;
+  color: #78350F;
+  margin: 0;
+  line-height: 1.45;
+}
+
+.dev-rules-alert-left code {
+  background: #FEF3C7;
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  font-family: var(--dev-font-mono);
+  font-size: 0.82rem;
+}
+
+.dev-btn-rules-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.65rem 1.15rem;
+  border-radius: var(--dev-radius-md);
+  background: #D97706;
+  color: #FFFFFF;
+  font-family: var(--dev-font-sans);
+  font-size: 0.84rem;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(217, 119, 6, 0.25);
+}
+
+.dev-btn-rules-action:hover {
+  background: #B45309;
+  transform: translateY(-1px);
+}
+
+@media (max-width: 768px) {
+  .dev-rules-alert-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.85rem;
+    padding: 1rem;
+  }
+  .dev-btn-rules-action {
+    width: 100%;
+  }
+}

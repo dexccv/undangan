@@ -130,7 +130,97 @@ export default function DevDashboard() {
   const [previewDevice, setPreviewDevice] = useState('mobile');
   const [testGuestName, setTestGuestName] = useState('Sahabat Tercinta');
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [isRulesRestricted, setIsRulesRestricted] = useState(false);
   const monitorUnsubRef = useRef({ rsvp: null, guestbook: null });
+
+  // Helper kompresi gambar lokal (Spark Plan friendly - bebas Firebase Storage)
+  const compressDevImage = (file, maxWidth = 800, quality = 0.7) => {
+    return new Promise((resolve) => {
+      try {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            try {
+              const canvas = document.createElement('canvas');
+              let width = img.width;
+              let height = img.height;
+              if (width > maxWidth || height > maxWidth) {
+                if (width > height) {
+                  height = Math.round((height * maxWidth) / width);
+                  width = maxWidth;
+                } else {
+                  width = Math.round((width * maxWidth) / height);
+                  height = maxWidth;
+                }
+              }
+              canvas.width = width;
+              canvas.height = height;
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(img, 0, 0, width, height);
+              resolve(canvas.toDataURL('image/jpeg', quality));
+            } catch (canvasErr) {
+              resolve(e.target.result || '');
+            }
+          };
+          img.onerror = () => resolve(e.target.result || '');
+          img.src = e.target.result;
+        };
+        reader.onerror = () => resolve('');
+        reader.readAsDataURL(file);
+      } catch (err) {
+        resolve('');
+      }
+    });
+  };
+
+  // Dialog panduan dan salin rules Firestore
+  const showRulesGuide = () => {
+    Swal.fire({
+      title: 'Perbaiki Aturan Firestore (Spark Plan)',
+      html: `
+        <div style="text-align: left; font-size: 0.88rem; line-height: 1.6; color: #333;">
+          <p style="margin-bottom: 0.5rem;">
+            Karena Anda menggunakan <strong>Firebase Spark Plan (Gratis)</strong>, aplikasi ini telah disesuaikan agar <strong>TIDAK membutuhkan Cloud Storage sama sekali</strong>. Bukti transfer dan foto langsung disimpan di database Firestore secara instan.
+          </p>
+          <div style="margin-bottom: 0.75rem; padding: 0.75rem; background: #FEF3C7; border: 1px solid #FCD34D; border-radius: 8px; color: #92400E; font-size: 0.82rem;">
+            <strong>Langkah Cepat (1 Menit):</strong>
+            <ol style="margin: 0.3rem 0 0 1.2rem; padding: 0;">
+              <li>Buka <a href="https://console.firebase.google.com" target="_blank" rel="noopener noreferrer" style="color: #B45309; font-weight: bold; text-decoration: underline;">Firebase Console</a> &gt; Project <strong>undangan-5cf2f</strong></li>
+              <li>Buka menu <strong>Firestore Database</strong> &gt; Tab <strong>Rules</strong></li>
+              <li>Ganti aturannya dengan kode di bawah, lalu klik <strong>Publish</strong></li>
+            </ol>
+          </div>
+          <pre style="background: #1E293B; color: #E2E8F0; padding: 0.85rem; border-radius: 8px; font-size: 0.78rem; overflow-x: auto; white-space: pre;">rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}</pre>
+        </div>
+      `,
+      width: '640px',
+      showCancelButton: true,
+      confirmButtonText: 'Salin Rules Firestore',
+      cancelButtonText: 'Tutup',
+      confirmButtonColor: '#B8860B'
+    }).then((r) => {
+      if (r.isConfirmed) {
+        navigator.clipboard.writeText(`rules_version = '2';\nservice cloud.firestore {\n  match /databases/{database}/documents {\n    match /{document=**} {\n      allow read, write: if true;\n    }\n  }\n}`);
+        Swal.fire({
+          toast: true,
+          position: 'top-end',
+          icon: 'success',
+          title: 'Aturan Berhasil Disalin!',
+          text: 'Tinggal paste di tab Rules Firestore lalu klik Publish.',
+          showConfirmButton: false,
+          timer: 4000
+        });
+      }
+    });
+  };
 
   // Web Audio chime notifikasi pesanan masuk realtime
   const playNewOrderNotificationSound = () => {
@@ -246,6 +336,9 @@ export default function DevDashboard() {
         },
         (err) => {
           console.warn('Realtime orders snapshot notice (offline/rules):', err);
+          if (err.code === 'permission-denied' || err.message?.includes('permission')) {
+            setIsRulesRestricted(true);
+          }
           fetchOrders();
         }
       );
@@ -547,6 +640,9 @@ export default function DevDashboard() {
         });
       } catch (e2) {
         console.warn('Firestore orders read error:', e2);
+        if (e2.code === 'permission-denied' || e2.message?.includes('permission')) {
+          setIsRulesRestricted(true);
+        }
       }
     }
 
@@ -724,35 +820,14 @@ export default function DevDashboard() {
       });
 
       try {
-        const reader = new FileReader();
-        const previewPromise = new Promise((resolve) => {
-          reader.onload = () => resolve(reader.result);
-          reader.onerror = () => resolve('');
-          reader.readAsDataURL(file);
-        });
-        const previewDataUrl = await previewPromise;
-
-        let downloadUrl = '';
-        try {
-          const safeName = (file.name || 'bukti.jpg').replace(
-            /[^a-zA-Z0-9.-]/g,
-            '_'
-          );
-          const storageRef = ref(
-            storage,
-            `orders/receipts/${orderId}_${safeName}`
-          );
-          const res = await uploadBytes(storageRef, file);
-          downloadUrl = await getDownloadURL(res.ref);
-        } catch (uploadErr) {
-          console.warn('Storage upload notice, saving base64 to Firestore:', uploadErr);
-        }
+        const previewDataUrl = await compressDevImage(file, 640, 0.65);
+        const downloadUrl = previewDataUrl || '';
 
         await setDoc(
           doc(db, 'orders', orderId),
           {
-            receipt_url: downloadUrl || '',
-            receipt_preview: previewDataUrl || '',
+            receipt_url: downloadUrl,
+            receipt_preview: previewDataUrl,
             receipt_name: file.name,
             has_receipt: true
           },
@@ -764,8 +839,8 @@ export default function DevDashboard() {
             o.id === orderId
               ? {
                   ...o,
-                  receipt_url: downloadUrl || '',
-                  receipt_preview: previewDataUrl || '',
+                  receipt_url: downloadUrl,
+                  receipt_preview: previewDataUrl,
                   receipt_name: file.name,
                   has_receipt: true
                 }
@@ -779,7 +854,7 @@ export default function DevDashboard() {
 
         Swal.fire({
           title: 'Berhasil Disimpan!',
-          text: 'Foto bukti transfer berhasil diunggah dan kini dapat dibuka kapan saja.',
+          text: 'Foto bukti transfer berhasil disimpan ke sistem.',
           icon: 'success',
           confirmButtonColor: '#B8860B'
         });
@@ -1205,30 +1280,19 @@ export default function DevDashboard() {
 
     setUploadingField(fieldName);
     try {
-      const storageRef = ref(
-        storage,
-        `couples/${formData.id || 'temp'}/${fieldName}_${Date.now()}_${file.name}`
-      );
-      const uploadRes = await uploadBytes(storageRef, file);
-      const downloadUrl = await getDownloadURL(uploadRes.ref);
-      setFormData((prev) => ({ ...prev, [fieldName]: downloadUrl }));
+      const compressed = await compressDevImage(file, 900, 0.72);
+      setFormData((prev) => ({ ...prev, [fieldName]: compressed }));
       Swal.fire({
-        title: 'Foto Berhasil Diunggah',
-        text: 'File gambar telah tersimpan dengan aman.',
+        title: 'Foto Berhasil Disimpan',
+        text: 'File foto berhasil diproses dan disimpan ke draf undangan.',
         icon: 'success',
         confirmButtonColor: '#B8860B'
       });
     } catch (err) {
-      console.warn('Firebase Storage upload fallback:', err);
+      console.warn('File read fallback:', err);
       const reader = new FileReader();
       reader.onload = () => {
         setFormData((prev) => ({ ...prev, [fieldName]: reader.result }));
-        Swal.fire({
-          title: 'Foto Tersimpan Sementara',
-          text: 'Gambar ditampilkan sebagai pratinjau data lokal.',
-          icon: 'info',
-          confirmButtonColor: '#B8860B'
-        });
       };
       reader.readAsDataURL(file);
     } finally {
@@ -1979,6 +2043,8 @@ export default function DevDashboard() {
             handleViewReceipt={handleViewReceipt}
             handleConvertOrderToInvitation={handleConvertOrderToInvitation}
             handleDeleteOrder={handleDeleteOrder}
+            isRulesRestricted={isRulesRestricted}
+            showRulesGuide={showRulesGuide}
           />
         )}
 

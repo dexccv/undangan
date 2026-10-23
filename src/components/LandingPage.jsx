@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { db, storage } from '../firebase';
+import { auth, db, storage } from '../firebase';
 import { collection, addDoc, serverTimestamp, doc, setDoc } from 'firebase/firestore';
+import { signInAnonymously } from 'firebase/auth';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import Swal from 'sweetalert2';
 import {
@@ -787,6 +788,9 @@ export default function LandingPage() {
 
     // Simpan ke Firestore dengan ID orderId yang konsisten
     try {
+      if (!auth.currentUser) {
+        try { await signInAnonymously(auth); } catch (e) {}
+      }
       await setDoc(doc(db, 'orders', orderId), {
         ...newOrder,
         created_at: serverTimestamp()
@@ -873,37 +877,17 @@ export default function LandingPage() {
     }
 
     setIsUploadingReceipt(true);
-    let receiptUrl = '';
-    let receiptThumb = '';
 
-    // Siapkan thumbnail terkompresi untuk penyimpanan lokal instan
+    // Kompres foto bukti transfer langsung ke Base64 (100% kompatibel Firebase Spark Plan tanpa Cloud Storage)
+    let receiptThumb = '';
     try {
-      receiptThumb = await compressReceiptImage(receiptFile, 800, 0.7);
+      receiptThumb = await compressReceiptImage(receiptFile, 640, 0.65);
     } catch (e) {
       receiptThumb = receiptPreview || '';
     }
+    const receiptUrl = receiptThumb || '';
 
-    // 2. Unggah ke Firebase Storage dengan timeout 6 detik
-    try {
-      const safeName = (receiptFile.name || 'bukti.jpg').replace(/[^a-zA-Z0-9.-]/g, '_');
-      const storageRef = ref(storage, `orders/receipts/${createdOrderId || Date.now()}_${safeName}`);
-
-      const uploadPromise = (async () => {
-        const uploadRes = await uploadBytes(storageRef, receiptFile);
-        return await getDownloadURL(uploadRes.ref);
-      })();
-
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Firebase Storage timeout/CORS')), 6000)
-      );
-
-      receiptUrl = await Promise.race([uploadPromise, timeoutPromise]);
-    } catch (err) {
-      console.warn('Firebase Storage upload fallback (CORS / network):', err);
-      receiptUrl = '';
-    }
-
-    // 3. Update status & bukti di localStorage agar tersimpan di antrean DevDashboard
+    // 2. Update status & bukti di localStorage agar tersimpan di antrean DevDashboard
     let updatedOrderObj = null;
     try {
       const localOrders = JSON.parse(localStorage.getItem('digitalisasi_orders') || '[]')
@@ -913,9 +897,9 @@ export default function LandingPage() {
           updatedOrderObj = {
             ...o,
             status: 'pending',
-            receipt_url: receiptUrl || '',
+            receipt_url: receiptUrl,
             receipt_name: receiptFile.name || '',
-            receipt_preview: receiptThumb || '',
+            receipt_preview: receiptThumb,
             has_receipt: true
           };
           return updatedOrderObj;
@@ -930,6 +914,9 @@ export default function LandingPage() {
     // 4. Update di Firestore orders jika permissions mengizinkan
     try {
       if (createdOrderId) {
+        if (!auth.currentUser) {
+          try { await signInAnonymously(auth); } catch (e) {}
+        }
         await Promise.race([
           setDoc(doc(db, 'orders', createdOrderId), {
             status: 'pending',
