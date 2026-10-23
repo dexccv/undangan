@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
-import { auth, db, storage } from '../firebase';
-import { collection, addDoc, serverTimestamp, doc, setDoc } from 'firebase/firestore';
-import { signInAnonymously } from 'firebase/auth';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db } from '../firebase';
+import { serverTimestamp, doc, setDoc } from 'firebase/firestore';
 import Swal from 'sweetalert2';
 import {
   Sparkle,
@@ -305,31 +303,33 @@ export default function LandingPage() {
         // Coba Photon Komoot dengan Bounding Box & Filter Khusus Indonesia
         try {
           const photonRes = await fetch(
-            `https://photon.komoot.io/api/?q=${encodeURIComponent(val)}&bbox=95.0,-11.0,141.0,6.0&limit=10&lang=id`
+            `https://photon.komoot.io/api/?q=${encodeURIComponent(val)}&bbox=95.0,-11.0,141.0,6.0&limit=10`
           );
-          const photonData = await photonRes.json();
-          if (photonData?.features?.length > 0) {
-            results = photonData.features
-              .filter((feat) => {
-                const p = feat.properties;
-                const [lon, lat] = feat.geometry.coordinates;
-                const isIdCountry = p.countrycode?.toUpperCase() === 'ID' || p.country?.toLowerCase() === 'indonesia';
-                return isIdCountry && isLocationInIndonesia(lat, lon);
-              })
-              .slice(0, 6)
-              .map((feat) => {
-                const p = feat.properties;
-                const [lon, lat] = feat.geometry.coordinates;
-                const addrParts = [p.name, p.street, p.district, p.city, p.state].filter(Boolean);
-                return {
-                  id: `${lat}_${lon}`,
-                  name: p.name || addrParts[0] || 'Tempat Acara',
-                  address: addrParts.slice(1).join(', ') || p.city || 'Indonesia',
-                  fullAddress: addrParts.join(', '),
-                  lat,
-                  lon
-                };
-              });
+          if (photonRes.ok) {
+            const photonData = await photonRes.json();
+            if (photonData?.features?.length > 0) {
+              results = photonData.features
+                .filter((feat) => {
+                  const p = feat.properties;
+                  const [lon, lat] = feat.geometry.coordinates;
+                  const isIdCountry = p.countrycode?.toUpperCase() === 'ID' || p.country?.toLowerCase() === 'indonesia';
+                  return isIdCountry && isLocationInIndonesia(lat, lon);
+                })
+                .slice(0, 6)
+                .map((feat) => {
+                  const p = feat.properties;
+                  const [lon, lat] = feat.geometry.coordinates;
+                  const addrParts = [p.name, p.street, p.district, p.city, p.state].filter(Boolean);
+                  return {
+                    id: `${lat}_${lon}`,
+                    name: p.name || addrParts[0] || 'Tempat Acara',
+                    address: addrParts.slice(1).join(', ') || p.city || 'Indonesia',
+                    fullAddress: addrParts.join(', '),
+                    lat,
+                    lon
+                  };
+                });
+            }
           }
         } catch (errP) {
           console.warn('Photon error, trying Nominatim fallback:', errP);
@@ -534,22 +534,24 @@ export default function LandingPage() {
       // 1. Coba Photon Komoot (dengan bbox wilayah Indonesia)
       try {
         const pRes = await fetch(
-          `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&bbox=95.0,-11.0,141.0,6.0&limit=5&lang=id`
+          `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&bbox=95.0,-11.0,141.0,6.0&limit=5`
         );
-        const pData = await pRes.json();
-        const validFeature = pData?.features?.find((feat) => {
-          const [lon, lat] = feat.geometry.coordinates;
-          return isLocationInIndonesia(lat, lon);
-        });
+        if (pRes.ok) {
+          const pData = await pRes.json();
+          const validFeature = pData?.features?.find((feat) => {
+            const [lon, lat] = feat.geometry.coordinates;
+            return isLocationInIndonesia(lat, lon);
+          });
 
-        if (validFeature) {
-          [foundLon, foundLat] = validFeature.geometry.coordinates;
-          foundName = [
-            validFeature.properties.name,
-            validFeature.properties.street,
-            validFeature.properties.city,
-            validFeature.properties.state
-          ].filter(Boolean).join(', ');
+          if (validFeature) {
+            [foundLon, foundLat] = validFeature.geometry.coordinates;
+            foundName = [
+              validFeature.properties.name,
+              validFeature.properties.street,
+              validFeature.properties.city,
+              validFeature.properties.state
+            ].filter(Boolean).join(', ');
+          }
         }
       } catch (err) {
         console.warn('Photon map search error:', err);
@@ -786,17 +788,17 @@ export default function LandingPage() {
       new CustomEvent('digitalisasi_order_created', { detail: newOrder })
     );
 
-    // Simpan ke Firestore dengan ID orderId yang konsisten
+    // Simpan ke Firestore dengan ID orderId yang konsisten (non-blocking)
     try {
-      if (!auth.currentUser) {
-        try { await signInAnonymously(auth); } catch (e) {}
-      }
-      await setDoc(doc(db, 'orders', orderId), {
-        ...newOrder,
-        created_at: serverTimestamp()
-      });
+      await Promise.race([
+        setDoc(doc(db, 'orders', orderId), {
+          ...newOrder,
+          created_at: serverTimestamp()
+        }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 2500))
+      ]);
     } catch (err) {
-      console.warn('Firestore orders save warning (rules/offline):', err);
+      console.warn('Firestore orders save notice (rules/offline):', err);
     }
 
     setIsSubmittingOrder(false);
@@ -911,12 +913,9 @@ export default function LandingPage() {
       console.warn('LocalStorage order update notice:', e);
     }
 
-    // 4. Update di Firestore orders jika permissions mengizinkan
+    // 4. Update di Firestore orders jika permissions mengizinkan (non-blocking)
     try {
       if (createdOrderId) {
-        if (!auth.currentUser) {
-          try { await signInAnonymously(auth); } catch (e) {}
-        }
         await Promise.race([
           setDoc(doc(db, 'orders', createdOrderId), {
             status: 'pending',
@@ -925,7 +924,7 @@ export default function LandingPage() {
             receipt_name: receiptFile.name || '',
             has_receipt: true
           }, { merge: true }),
-          new Promise((resolve) => setTimeout(resolve, 5000))
+          new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 2500))
         ]);
       }
     } catch (err) {

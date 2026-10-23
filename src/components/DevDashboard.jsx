@@ -49,7 +49,13 @@ import DevBlastView from './dev/DevBlastView';
 import DevSmartParserModal from './dev/DevSmartParserModal';
 
 export default function DevDashboard() {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('digitalisasi_dev_user');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return null;
+  });
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
@@ -62,8 +68,18 @@ export default function DevDashboard() {
   const [activeEditorTab, setActiveEditorTab] = useState('profile');
 
   // Orders State (Pesanan Masuk dari Landing Page)
-  const [orders, setOrders] = useState([]);
-  const [loadingOrders, setLoadingOrders] = useState(true);
+  const [orders, setOrders] = useState(() => {
+    try {
+      const raw = localStorage.getItem('digitalisasi_orders');
+      if (raw) {
+        return JSON.parse(raw).filter(
+          (o) => o && o.id && o.id !== 'ord-sample-01' && o.id !== 'sample'
+        );
+      }
+    } catch (e) {}
+    return [];
+  });
+  const [loadingOrders, setLoadingOrders] = useState(false);
   const [orderFilter, setOrderFilter] = useState('all');
   const [isSmartParserOpen, setIsSmartParserOpen] = useState(false);
   const [rawChatText, setRawChatText] = useState('');
@@ -452,13 +468,31 @@ service cloud.firestore {
     window.addEventListener('storage', handleStorageChange);
 
     const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
       if (currentUser) {
+        const u = { email: currentUser.email, uid: currentUser.uid };
+        setUser(u);
+        try {
+          localStorage.setItem('digitalisasi_dev_user', JSON.stringify(u));
+        } catch (e) {}
         fetchCouples();
         fetchOrders();
       } else {
-        setLoadingData(false);
-        setLoadingOrders(false);
+        try {
+          const saved = localStorage.getItem('digitalisasi_dev_user');
+          if (saved) {
+            setUser(JSON.parse(saved));
+            fetchCouples();
+            fetchOrders();
+          } else {
+            setUser(null);
+            setLoadingData(false);
+            setLoadingOrders(false);
+          }
+        } catch (e) {
+          setUser(null);
+          setLoadingData(false);
+          setLoadingOrders(false);
+        }
       }
     });
 
@@ -572,7 +606,12 @@ service cloud.firestore {
     e.preventDefault();
     setIsLoggingIn(true);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      const u = { email: cred.user.email, uid: cred.user.uid };
+      setUser(u);
+      try {
+        localStorage.setItem('digitalisasi_dev_user', JSON.stringify(u));
+      } catch (errLocal) {}
       Swal.fire({
         title: 'Masuk Berhasil',
         text: 'Selamat datang di Panel Pengelola Undangan.',
@@ -592,7 +631,11 @@ service cloud.firestore {
   };
 
   const handleDevBypassLogin = () => {
-    setUser({ email: 'developer@digitalisasi.id', uid: 'dev-local-user' });
+    const devUser = { email: 'developer@digitalisasi.id', uid: 'dev-local-user' };
+    setUser(devUser);
+    try {
+      localStorage.setItem('digitalisasi_dev_user', JSON.stringify(devUser));
+    } catch (e) {}
     fetchCouples();
     fetchOrders();
   };
@@ -603,6 +646,9 @@ service cloud.firestore {
     } catch (e) {
       // ignore
     }
+    try {
+      localStorage.removeItem('digitalisasi_dev_user');
+    } catch (e) {}
     setUser(null);
   };
 
@@ -914,6 +960,75 @@ service cloud.firestore {
         showConfirmButton: false
       });
     }
+  };
+
+  const handleCreateTestOrder = async () => {
+    const testId = 'ord-test-' + Date.now();
+    const testOrder = {
+      id: testId,
+      package_name: 'Paket Platinum Luxury',
+      package_price: 'Rp 149.000',
+      slug: 'rizky-amanda',
+      couple_name: 'Amanda & Rizky',
+      customer_phone: '081225589199',
+      wanita_panggilan: 'Amanda',
+      wanita_lengkap: 'Amanda Putri Maharani, S.E.',
+      wanita_ortu: 'Bpk. Bambang & Ibu Sri',
+      wanita_ig: '@amandaputri',
+      pria_panggilan: 'Rizky',
+      pria_lengkap: 'Rizky Pratama Wijaya, S.T.',
+      pria_ortu: 'Bpk. Gunawan & Ibu Endang',
+      pria_ig: '@rizkypratama',
+      song_title: 'Kahitna - Menikahimu',
+      event_date: '2026-12-25',
+      event_location: 'Hotel Santika Premiere, Ballroom Lt. 2',
+      event_location_maps_url: 'https://maps.google.com',
+      notes: 'Mohon cantumkan nomor rekening BCA untuk amplop digital.',
+      status: 'pending',
+      receipt_name: 'bukti_qris_mandiri.jpg',
+      receipt_url: '/assets/foto1.jpg',
+      receipt_preview: '/assets/foto1.jpg',
+      has_receipt: true,
+      created_at: { seconds: Math.floor(Date.now() / 1000) }
+    };
+
+    try {
+      const existing = JSON.parse(localStorage.getItem('digitalisasi_orders') || '[]')
+        .filter((o) => o.id !== 'ord-sample-01' && o.id !== 'sample');
+      localStorage.setItem(
+        'digitalisasi_orders',
+        JSON.stringify([testOrder, ...existing.filter((o) => o.id !== testId)])
+      );
+    } catch (e) {}
+
+    setOrders((prev) => [testOrder, ...prev.filter((o) => o.id !== testId)]);
+    playNewOrderNotificationSound();
+
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        const bc = new BroadcastChannel('digitalisasi_orders_channel');
+        bc.postMessage({ type: 'ORDER_CREATED', order: testOrder });
+        bc.close();
+      }
+    } catch (e) {}
+
+    Swal.fire({
+      icon: 'success',
+      title: 'Simulasi Pesanan Masuk!',
+      text: 'Pesanan uji coba Amanda & Rizky berhasil ditambahkan ke antrean!',
+      timer: 2500,
+      showConfirmButton: false
+    });
+
+    try {
+      await Promise.race([
+        setDoc(doc(db, 'orders', testId), {
+          ...testOrder,
+          created_at: serverTimestamp()
+        }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 2000))
+      ]);
+    } catch (e) {}
   };
 
   const handleConvertOrderToInvitation = (order) => {
@@ -2045,6 +2160,7 @@ service cloud.firestore {
             handleDeleteOrder={handleDeleteOrder}
             isRulesRestricted={isRulesRestricted}
             showRulesGuide={showRulesGuide}
+            handleCreateTestOrder={handleCreateTestOrder}
           />
         )}
 

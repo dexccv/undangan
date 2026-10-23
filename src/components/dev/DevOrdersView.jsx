@@ -25,7 +25,8 @@ export default function DevOrdersView({
   handleConvertOrderToInvitation,
   handleDeleteOrder,
   isRulesRestricted,
-  showRulesGuide
+  showRulesGuide,
+  handleCreateTestOrder
 }) {
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -77,6 +78,26 @@ export default function DevOrdersView({
         </div>
 
         <div className="dev-orders-header-actions">
+          {handleCreateTestOrder && (
+            <button
+              type="button"
+              className="dev-btn-primary"
+              onClick={handleCreateTestOrder}
+              title="Klik untuk membuat simulasi pesanan masuk dan menguji realtime dashboard"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.45rem',
+                padding: '0.45rem 0.85rem',
+                fontSize: '0.82rem',
+                borderRadius: '8px'
+              }}
+            >
+              <Lightning size={16} weight="fill" />
+              <span>Tes Simulasi Pesanan</span>
+            </button>
+          )}
+
           <button
             type="button"
             className="dev-btn-secondary"
