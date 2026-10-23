@@ -1,5 +1,5 @@
 import React from 'react';
-import { Heart, ArrowUp, Sparkle } from '@phosphor-icons/react';
+import { Heart, ArrowUp } from '@phosphor-icons/react';
 import ScrollReveal from './ui/ScrollReveal';
 
 export default function Closing({ data }) {
@@ -23,11 +23,6 @@ export default function Closing({ data }) {
       <div className="section-container closing-content">
         <ScrollReveal direction="up">
           <div className="closing-card">
-            <span className="closing-pill">
-              <Sparkle size={14} weight="fill" />
-              <span>TERIMA KASIH</span>
-            </span>
-
             <h3 className="closing-salam">Wassalamu'alaikum Warahmatullahi Wabarakatuh</h3>
 
             <p className="closing-text">

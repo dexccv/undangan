@@ -56,10 +56,6 @@ export default function Story({ data }) {
       <div className="section-container">
         <ScrollReveal direction="up">
           <div className="section-header text-center">
-            <span className="section-pill">
-              <Heart size={14} weight="fill" />
-              <span>OUR JOURNEY</span>
-            </span>
             <h2 className="section-title">Kisah Cinta Kami</h2>
             <p className="section-description">
               Setiap kisah memiliki babak yang berharga. Inilah bagaimana takdir merajut langkah kami berdua:

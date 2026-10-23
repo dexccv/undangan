@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Gift as GiftIcon, Copy, Check, CreditCard, Sparkle, Package } from '@phosphor-icons/react';
+import { Copy, Check, CreditCard, Package } from '@phosphor-icons/react';
 import { useToast } from '../context/ToastContext';
 import ScrollReveal from './ui/ScrollReveal';
 
@@ -50,10 +50,6 @@ export default function Gift({ data }) {
       <div className="section-container">
         <ScrollReveal direction="up">
           <div className="section-header text-center">
-            <span className="section-pill">
-              <GiftIcon size={14} weight="fill" />
-              <span>TANDA KASIH</span>
-            </span>
             <h2 className="section-title">Amplop &amp; Hadiah Digital</h2>
             <p className="section-description">
               Doa restu Anda adalah karunia yang terindah. Bagi keluarga dan sahabat yang ingin memberikan tanda kasih secara digital, dapat disalurkan melalui:

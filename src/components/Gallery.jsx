@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Camera, X, ArrowsOutSimple, Sparkle } from '@phosphor-icons/react';
+import { X, ArrowsOutSimple } from '@phosphor-icons/react';
 import ScrollReveal from './ui/ScrollReveal';
 
 export default function Gallery({ data }) {
@@ -30,10 +30,6 @@ export default function Gallery({ data }) {
       <div className="section-container">
         <ScrollReveal direction="up">
           <div className="section-header text-center">
-            <span className="section-pill">
-              <Camera size={14} weight="fill" />
-              <span>GALERI PREWEDDING</span>
-            </span>
             <h2 className="section-title">Potret Kebahagiaan</h2>
             <p className="section-description">
               Momen-momen berharga yang kami abadikan dalam lembaran kenangan indah:

@@ -77,29 +77,42 @@ Aplikasi ini menggunakan pola arsitektur berbasis komponen tunggal (*Single Page
 
 ### 4. Panel Pengelola Komprehensif (Developer Dashboard)
 
-- **Keamanan Autentikasi Admin:** Dilindungi gerbang masuk Firebase Authentication dengan enkripsi kata sandi dan opsi bypass pengembang lokal.
-- **Executive Topbar & Studio Canvas:** Bilah atas pemantauan status koneksi server, jumlah pasangan aktif, indikator pesanan baru masuk, serta tautan cepat ke pratinjau undangan.
-- **Editor Data Pasangan (9 Tab Terstruktur):**
+- **Arsitektur Modular & Ringan:** Kode panel pengelola diorganisasikan secara terstruktur ke dalam sub-komponen fungsional pada direktori `src/components/dev/` untuk mencegah *re-render* berlebih dan memudahkan pemeliharaan:
+  - `DevOrdersView.jsx`: Pengelolaan antrean pesanan masuk, pencarian cepat, filter kategori, dan metrik KPI.
+  - `DevCouplesList.jsx`: Manajemen daftar pasangan dengan tabel presisi di desktop dan kartu adaptif di mobile.
+  - `DevEditorView.jsx`: Formulir penyuntingan 9 modul undangan dengan bilah sub-tab melayang (*sticky chips*) dan preset paket.
+  - `DevBlastView.jsx`: Generator tautan tamu personal, pengimpor file Excel/CSV, dan pratinjau pesan WhatsApp.
+  - `DevSmartParserModal.jsx`: Modal ekstraktor cerdas dari format teks obrolan WhatsApp.
+- **Keamanan Autentikasi Admin:** Dilindungi gerbang masuk Firebase Authentication dengan enkripsi kata sandi dan opsi bypass pengembang lokal (*Dev Mode*).
+- **Executive Topbar & Status Sistem:** Bilah status atas real-time yang memantau konektivitas server, jumlah pasangan terdaftar, dan indikator lencana pesanan baru masuk.
+- **Ergonomi Seluler Terpadu (Mobile-First UI/UX):**
+  - **Navigasi Tunggal Bawah (Fixed Bottom Nav):** Menghilangkan navigasi tab ganda di bagian atas mobile, memusatkan alur navigasi pada 4 tombol ergonomis di bawah layar (`Pesanan`, `Undangan`, `Editor`, `Blast WA`).
+  - **Metrik Mini 3-Kolom:** Kartu statistik pesanan dirancang kompak sejajar pada layar ponsel, menghemat lebih dari 300px ruang vertikal.
+  - **Kartu Undangan Responsif:** Pada layar `< 768px`, tabel desktop otomatis bertransformasi menjadi kartu seluler lengkap dengan tombol aksi sentuh lega (**≥44px**) dan salin tautan 1-klik tanpa pemotongan ke samping (*zero horizontal overflow*).
+- **Editor Data Pasangan (9 Sub-Bagian Terstruktur):**
   1. *Profil Mempelai:* Data nama lengkap, nama panggilan, orang tua, akun media sosial, serta kutipan doa dan sumber ayat.
-  2. *Jadwal Acara:* Waktu, tanggal, dan alamat presisi akad nikah serta resepsi.
-  3. *Foto & Media:* Slot pengunggahan gambar resolusi tinggi untuk sampul, tirai, kutipan, mempelai, tempat acara, dan penutup.
-  4. *Musik & Lagu Latar:* Pilihan sumber musik (unggah audio sendiri, tempel link YouTube, atau pilih preset rekomendasi), input judul lagu dan musisi, serta tombol uji coba audio instan.
-  5. *Perjalanan Kisah Cinta:* Manajemen fase cerita lengkap dengan pratinjau foto, tombol pengunggahan berkas, pilihan cepat foto bawaan, dan input tautan URL manual.
-  6. *Galeri Foto Prewedding:* Penambahan dan pengurangan koleksi foto album dengan tombol unggah terintegrasi dan keterangan foto (*caption*).
-  7. *Rekening & Hadiah:* Data nomor rekening, bank tujuan, penerima kado fisik, dan alamat kirim.
-  8. *Pratinjau Layar (Responsive Device Frame):* Peninjauan tampilan undangan langsung dalam bingkai realistis Ponsel (390px dengan takik ponsel dinamis), Tablet (768px), atau Komputer Desktop (100%), lengkap dengan input simulasi nama tamu.
-  9. *Kehadiran & Doa Tamu:* Pemantauan daftar tamu yang hadir/berhalangan serta daftar ucapan doa.
-- **Ekspor Data ke Microsoft Excel:** Kemampuan mengekspor seluruh daftar konfirmasi kehadiran dan ucapan doa tamu ke format `.xlsx` menggunakan SheetJS.
-- **Generator Tautan Undangan & Kirim WhatsApp Massal:** Pengurai otomatis daftar nama tamu untuk menghasilkan tautan personalisasi instan beserta pesan salam terformat yang siap dikirim via WhatsApp.
-- **Ketahanan Penyimpanan Firestore:** Sanitasi otomatis rekursif seluruh data formulir sebelum dieksekusi oleh `setDoc()`, mencegah eror `undefined field value`.
+  2. *Jadwal Acara:* Waktu, tanggal, dan alamat presisi prosesi akad nikah serta resepsi pernikahan.
+  3. *Foto & Media:* Slot pengunggahan gambar resolusi tinggi untuk sampul, tirai, sambutan, mempelai, tempat acara, dan penutup.
+  4. *Musik & Lagu Latar:* Pilihan sumber musik (unggah MP3, tautan YouTube dengan pengambil metadata otomatis, atau lagu preset bawaan) beserta pemutar uji coba audio langsung.
+  5. *Perjalanan Kisah Cinta:* Manajemen fase cerita lengkap dengan foto kenangan, tahun, judul, dan uraian narasi.
+  6. *Galeri Foto Prewedding:* Album foto prewedding dinamis dengan takarir (*caption*) dan integrasi Firebase Storage.
+  7. *Rekening & Hadiah:* Rekening bank mempelai, dompet digital, nama penerima kado fisik, dan alamat kirim.
+  8. *Pratinjau Layar (Responsive Device Frame):* Uji coba tampilan undangan langsung dalam bingkai realistis Ponsel (390px dengan takik ponsel), Tablet (768px), atau Komputer Desktop (100%), lengkap dengan simulasi nama tamu.
+  9. *Kehadiran & Doa Tamu:* Pemantauan daftar konfirmasi kehadiran tamu (Hadir/Tidak Hadir, jumlah orang) dan buku doa restu.
+- **Floating Save Action Bar Aman:** Bilah simpan melayang dengan bantalan area aman (*safe-area bottom padding*) yang mencegah tombol terhalang oleh bilah navigasi seluler.
 
 ---
 
-### 5. Sistem Manajemen Pesanan & Smart Chat Parser
+### 5. Sistem Manajemen Pesanan, WhatsApp Blast & Smart Parser
 
-- **Daftar Pesanan Masuk:** Pengelola dapat meninjau seluruh pesanan yang masuk dari Landing Page, memfilter status (Semua, Menunggu Pembayaran, Sedang Diproses, Selesai), dan mengunduh bukti transfer gambar.
-- **Konversi Pesanan Satu Klik:** Tombol *"Buat Undangan dari Pesanan Ini"* yang langsung memetakan data pesanan ke formulir editor undangan lengkap dengan paket fitur otomatis.
-- **Smart Chat Parser:** Fasilitas cerdas untuk menyalin teks rincian pernikahan dari obrolan WhatsApp calon pengantin dan mengekstrak nama mempelai, orang tua, tanggal, lokasi, serta rekening ke kolom formulir secara otomatis.
+- **Antrean Pesanan Masuk & Pencarian Instan:** Menampilkan pesanan paket dari Landing Page secara real-time, dilengkapi kolom pencarian instan berdasarkan nama mempelai, nomor telepon, atau paket.
+- **Peninjau Bukti Transfer QRIS:** Membuka bukti pembayaran dalam jendela modal pop-up interaktif dengan opsi perbesaran gambar atau penggantian foto bukti.
+- **Konversi Pesanan Satu Klik:** Tombol *"Buat Undangan dari Pesanan Ini"* yang langsung memetakan seluruh data pesanan pelanggan ke formulir editor undangan secara otomatis.
+- **Impor Tamu Massal dari Excel / CSV:** Fitur pengunggahan berkas spreadsheet (`.xlsx`, `.xls`, `.csv`) pada modul WhatsApp Blast yang secara cerdas mendeteksi kolom Nama dan Nomor Telepon untuk memuat ratusan tamu sekaligus.
+- **Bilah Penyisip Variabel Pesan 1-Klik:** Tombol pintas `[+ {nama_tamu}]` dan `[+ {link}]` untuk menyisipkan variabel tautan ke posisi kursor pada template pesan WhatsApp.
+- **Simulasi Gelembung Chat WhatsApp (Live Bubble Preview):** Kotak pratinjau visual hijau WhatsApp yang memperlihatkan contoh pesan yang akan diterima oleh tamu undangan sebelum dikirimkan.
+- **Smart Chat Parser:** Fasilitas cerdas bertenaga regex untuk menyalin teks rincian pernikahan dari obrolan WhatsApp calon pengantin dan mengekstrak nama mempelai, orang tua, tanggal, lokasi, serta rekening ke kolom formulir secara otomatis.
+- **Ekspor Data ke Microsoft Excel:** Kemampuan mengekspor seluruh daftar konfirmasi kehadiran dan ucapan doa tamu ke format file `.xlsx` menggunakan SheetJS.
 
 ---
 
@@ -116,7 +129,7 @@ Aplikasi ini menggunakan pola arsitektur berbasis komponen tunggal (*Single Page
 | **Autentikasi** | Google Firebase Auth | Manajemen sesi login pengelola panel |
 | **Mesin Audio Hybrid** | HTML5 Audio & YouTube IFrame API | Pemutaran musik latar mulus dari berkas lokal atau YouTube |
 | **Ikonografi** | @phosphor-icons/react | Seluruh ikon grafis konsisten tanpa emoji mentah |
-| **Olah Data Spreadsheet**| SheetJS (xlsx) | Ekspor data tabular konfirmasi kehadiran tamu ke Excel |
+| **Olah Data Spreadsheet**| SheetJS (xlsx) | Impor daftar tamu dari Excel dan ekspor data RSVP ke `.xlsx` |
 | **Notifikasi Dialog** | SweetAlert2 | Modal konfirmasi dan notifikasi status interaktif |
 | **Efek Visual Partikel** | canvas-confetti | Hamburan konfeti saat tamu membuka tirai undangan |
 
@@ -133,8 +146,14 @@ undangan-main/
 │   ├── components/
 │   │   ├── CurtainReveal.jsx   # Komponen tirai pembuka megah (GSAP & Confetti)
 │   │   ├── CurtainReveal.css   # Lembar gaya tirai teater dan efek shimmer
-│   │   ├── DevDashboard.jsx    # Panel pengelola lengkap (9 Tab Editor, Pesanan, & WA Blast)
-│   │   ├── DevDashboard.css    # Gaya studio pengelola, topbar, frame ponsel, & kartu
+│   │   ├── DevDashboard.jsx    # Orchestrator utama panel pengelola (Executive Studio)
+│   │   ├── DevDashboard.css    # Lembar gaya studio pengelola, responsivitas, & kartu
+│   │   ├── dev/                # Sub-komponen modular panel pengelola
+│   │   │   ├── DevOrdersView.jsx      # Antrean pesanan masuk, metrik KPI, & filter
+│   │   │   ├── DevCouplesList.jsx     # Daftar undangan (tabel desktop & kartu mobile)
+│   │   │   ├── DevEditorView.jsx      # Editor 9 tab, preset paket, & save bar aman
+│   │   │   ├── DevBlastView.jsx       # WhatsApp blast, impor Excel, & bubble preview
+│   │   │   └── DevSmartParserModal.jsx# Ekstraktor cerdas teks obrolan WhatsApp
 │   │   ├── LandingPage.jsx     # Halaman depan editorial dengan showcase mockup ponsel & form order
 │   │   ├── LandingPage.css     # Gaya ambient aura mesh, kisi arsitektur, dan film grain
 │   │   ├── ThreeScene.jsx      # Lapisan latar grafika Three.js ambient

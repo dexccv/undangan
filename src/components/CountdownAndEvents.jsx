@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, MapPin, NavigationArrow, Sparkle, CalendarPlus } from '@phosphor-icons/react';
+import { Clock, MapPin, NavigationArrow, CalendarPlus } from '@phosphor-icons/react';
 import ScrollReveal from './ui/ScrollReveal';
 
 export default function CountdownAndEvents({ data }) {
@@ -65,10 +65,6 @@ export default function CountdownAndEvents({ data }) {
         {/* Section Header */}
         <ScrollReveal direction="up">
           <div className="section-header text-center">
-            <span className="section-pill">
-              <Sparkle size={14} weight="fill" />
-              <span>SAVE THE DATE</span>
-            </span>
             <h2 className="section-title">Hari Bahagia Kami</h2>
             <p className="section-description">
               {isOver ? 'Alhamdulillah, hari pernikahan telah terlaksana.' : 'Menghitung waktu menuju momen ikrar suci:'}

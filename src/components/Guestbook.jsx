@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from 'firebase/firestore';
-import { ChatTeardropDots, PaperPlaneTilt, Sparkle, Heart } from '@phosphor-icons/react';
+import { PaperPlaneTilt, Heart } from '@phosphor-icons/react';
 import { useToast } from '../context/ToastContext';
 import ScrollReveal from './ui/ScrollReveal';
 
@@ -77,10 +77,6 @@ export default function Guestbook({ data, coupleId }) {
       <div className="section-container">
         <ScrollReveal direction="up">
           <div className="section-header text-center">
-            <span className="section-pill">
-              <ChatTeardropDots size={14} weight="fill" />
-              <span>KIRIM UCAPAN</span>
-            </span>
             <h2 className="section-title">Untaian Doa &amp; Harapan</h2>
             <p className="section-description">
               Tuliskan pesan manis dan doa restu Anda untuk mengiringi langkah baru kami:

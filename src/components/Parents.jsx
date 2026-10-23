@@ -1,5 +1,5 @@
 import React from 'react';
-import { Heart, InstagramLogo, Sparkle } from '@phosphor-icons/react';
+import { Heart, InstagramLogo } from '@phosphor-icons/react';
 import ScrollReveal from './ui/ScrollReveal';
 
 export default function Parents({ data }) {
@@ -11,10 +11,6 @@ export default function Parents({ data }) {
       <div className="section-container">
         <ScrollReveal direction="up">
           <div className="section-header text-center">
-            <span className="section-pill">
-              <Sparkle size={14} weight="fill" />
-              <span>PASANGAN MEMPELAI</span>
-            </span>
             <h2 className="section-title">Mempelai yang Berbahagia</h2>
             <p className="section-description">
               Maha Suci Allah yang telah menciptakan makhluk-Nya berpasang-pasangan. 

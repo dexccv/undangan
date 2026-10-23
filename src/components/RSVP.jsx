@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { db } from '../firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { PaperPlaneTilt, CheckCircle, XCircle, Users, Sparkle, Heart } from '@phosphor-icons/react';
+import { PaperPlaneTilt, CheckCircle, XCircle, Users, Heart } from '@phosphor-icons/react';
 import { useToast } from '../context/ToastContext';
 import ScrollReveal from './ui/ScrollReveal';
 
@@ -48,10 +48,6 @@ export default function RSVP({ data, coupleId }) {
       <div className="section-container">
         <ScrollReveal direction="up">
           <div className="section-header text-center">
-            <span className="section-pill">
-              <Sparkle size={14} weight="fill" />
-              <span>KONFIRMASI KEHADIRAN</span>
-            </span>
             <h2 className="section-title">Konfirmasi Kehadiran</h2>
             <p className="section-description">
               Kehadiran dan doa restu Anda merupakan kehormatan serta kebahagiaan terbesar bagi kami:

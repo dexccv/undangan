@@ -756,20 +756,38 @@ export default function LandingPage() {
       kutipan_doa: orderKutipanDoa.trim(),
       notes: orderNotes.trim(),
 
-      status: 'menunggu_pembayaran',
+      status: 'pending',
+      has_receipt: false,
       created_at: { seconds: Math.floor(Date.now() / 1000) }
     };
 
-    // Selalu simpan ke localStorage agar tidak hilang meski Firebase offline/restricted
+    // Selalu simpan ke localStorage dan bersihkan data dummy lama
     try {
-      const existing = JSON.parse(localStorage.getItem('digitalisasi_orders') || '[]');
-      localStorage.setItem('digitalisasi_orders', JSON.stringify([newOrder, ...existing]));
+      const existing = JSON.parse(localStorage.getItem('digitalisasi_orders') || '[]')
+        .filter((o) => o.id !== 'ord-sample-01' && o.id !== 'sample');
+      localStorage.setItem(
+        'digitalisasi_orders',
+        JSON.stringify([newOrder, ...existing.filter((o) => o.id !== orderId)])
+      );
     } catch (errLocal) {
       console.warn('Local storage save error:', errLocal);
     }
 
+    // Broadcast realtime event agar DevDashboard seketika menerima data pesanan baru
     try {
-      await addDoc(collection(db, 'orders'), {
+      if (typeof BroadcastChannel !== 'undefined') {
+        const bc = new BroadcastChannel('digitalisasi_orders_channel');
+        bc.postMessage({ type: 'ORDER_CREATED', order: newOrder });
+        bc.close();
+      }
+    } catch (bcErr) {}
+    window.dispatchEvent(
+      new CustomEvent('digitalisasi_order_created', { detail: newOrder })
+    );
+
+    // Simpan ke Firestore dengan ID orderId yang konsisten
+    try {
+      await setDoc(doc(db, 'orders', orderId), {
         ...newOrder,
         created_at: serverTimestamp()
       });
@@ -886,11 +904,13 @@ export default function LandingPage() {
     }
 
     // 3. Update status & bukti di localStorage agar tersimpan di antrean DevDashboard
+    let updatedOrderObj = null;
     try {
-      const localOrders = JSON.parse(localStorage.getItem('digitalisasi_orders') || '[]');
+      const localOrders = JSON.parse(localStorage.getItem('digitalisasi_orders') || '[]')
+        .filter((o) => o.id !== 'ord-sample-01' && o.id !== 'sample');
       const updated = localOrders.map((o) => {
         if (o.id === createdOrderId) {
-          return {
+          updatedOrderObj = {
             ...o,
             status: 'pending',
             receipt_url: receiptUrl || '',
@@ -898,6 +918,7 @@ export default function LandingPage() {
             receipt_preview: receiptThumb || '',
             has_receipt: true
           };
+          return updatedOrderObj;
         }
         return o;
       });
@@ -922,6 +943,20 @@ export default function LandingPage() {
       }
     } catch (err) {
       console.warn('Firestore orders update notice (rules/offline):', err);
+    }
+
+    // 5. Broadcast update bukti transfer secara realtime
+    if (updatedOrderObj) {
+      try {
+        if (typeof BroadcastChannel !== 'undefined') {
+          const bc = new BroadcastChannel('digitalisasi_orders_channel');
+          bc.postMessage({ type: 'ORDER_UPDATED', order: updatedOrderObj });
+          bc.close();
+        }
+      } catch (bcErr) {}
+      window.dispatchEvent(
+        new CustomEvent('digitalisasi_order_created', { detail: updatedOrderObj })
+      );
     }
 
     // 5. Susun format pesan WhatsApp ke Developer: 081225589199
